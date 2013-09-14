@@ -1,0 +1,122 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Header Files\ppc">
+      <UniqueIdentifier>{583f10df-a2bd-41bc-b6fb-5bafb4315174}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\ppc">
+      <UniqueIdentifier>{83aed87f-a9a4-49d5-8464-c2ac5cf4f6ad}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\xex">
+      <UniqueIdentifier>{cb0949f9-a1b2-4c58-985e-668ad2139e8a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\xex">
+      <UniqueIdentifier>{360b40f7-392b-48a3-989c-34d40c660c0f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\util">
+      <UniqueIdentifier>{cae10bfd-a6cc-44bb-a47c-4eb802cd8270}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\util">
+      <UniqueIdentifier>{75c402dc-9e42-409f-857c-ec6e3feef716}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\util\be">
+      <UniqueIdentifier>{db87541c-dd01-420f-a029-7782e32017ce}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="interpreterengine.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ppc\decoder.cpp">
+      <Filter>Source Files\ppc</Filter>
+    </ClCompile>
+    <ClCompile Include="ppc\disassembler.cpp">
+      <Filter>Source Files\ppc</Filter>
+    </ClCompile>
+    <ClCompile Include="ppc\interpreter.cpp">
+      <Filter>Source Files\ppc</Filter>
+    </ClCompile>
+    <ClCompile Include="xex\loader.cpp">
+      <Filter>Source Files\xex</Filter>
+    </ClCompile>
+    <ClCompile Include="xex\rijndael-alf-fst.cpp">
+      <Filter>Source Files\xex</Filter>
+    </ClCompile>
+    <ClCompile Include="util\log.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="interpreterengine.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ppc\cpu.h">
+      <Filter>Header Files\ppc</Filter>
+    </ClInclude>
+    <ClInclude Include="ppc\decoder.h">
+      <Filter>Header Files\ppc</Filter>
+    </ClInclude>
+    <ClInclude Include="ppc\disassembler.h">
+      <Filter>Header Files\ppc</Filter>
+    </ClInclude>
+    <ClInclude Include="ppc\instructions.h">
+      <Filter>Header Files\ppc</Filter>
+    </ClInclude>
+    <ClInclude Include="ppc\interpreter.h">
+      <Filter>Header Files\ppc</Filter>
+    </ClInclude>
+    <ClInclude Include="ppc\util.h">
+      <Filter>Header Files\ppc</Filter>
+    </ClInclude>
+    <ClInclude Include="xex\aes.h">
+      <Filter>Header Files\xex</Filter>
+    </ClInclude>
+    <ClInclude Include="xex\optionalheaders.h">
+      <Filter>Header Files\xex</Filter>
+    </ClInclude>
+    <ClInclude Include="xex\rijndael-alg-fst.h">
+      <Filter>Header Files\xex</Filter>
+    </ClInclude>
+    <ClInclude Include="xex\xex.h">
+      <Filter>Header Files\xex</Filter>
+    </ClInclude>
+    <ClInclude Include="util\log.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="util\be\memory.h">
+      <Filter>Header Files\util\be</Filter>
+    </ClInclude>
+    <ClInclude Include="util\be\inputstream.h">
+      <Filter>Header Files\util\be</Filter>
+    </ClInclude>
+    <ClInclude Include="util\bits.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ppc\table19.inc">
+      <Filter>Header Files\ppc</Filter>
+    </None>
+    <None Include="ppc\table31.inc">
+      <Filter>Header Files\ppc</Filter>
+    </None>
+    <None Include="ppc\tablePrimary.inc">
+      <Filter>Header Files\ppc</Filter>
+    </None>
+  </ItemGroup>
+</Project>
