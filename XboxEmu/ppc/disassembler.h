@@ -28,7 +28,8 @@ struct Operand
       UImm,
       SImm,
       Addr,
-      GprOfs
+      GprOfs,
+      Crfd
    };
 
    Type type;
@@ -56,6 +57,11 @@ struct Operand
       struct {
          int64_t value;
       } simm;
+
+      struct {
+         int32_t crN;
+         Access access;
+      } crfd;
    };
 };
 

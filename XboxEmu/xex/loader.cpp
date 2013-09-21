@@ -34,7 +34,7 @@ bool Loader::load(std::istream &istr)
 
    for (uint32_t i = 0; i < header.optHeaderCount; ++i) {
       uint32_t id, dataOffset, length;
-      uint32_t pos, start, end;
+      uint32_t pos, read, start, end;
          
       bes
          >> id
@@ -159,14 +159,8 @@ bool Loader::load(std::istream &istr)
       }
 
       end = bes.tell();
-
-      uint32_t read;
-         
-      read = static_cast<uint32_t>(end) - static_cast<uint32_t>(start);
-
-      /*if (read > 0 && read != length) {*/
+      read = end - start;
       xDebug() << "Header 0x" << Log::hex(id, 8) << " read " << read << " / " << length << " bytes";
-      /*}*/
 
       bes.seek(pos);
    }

@@ -60,6 +60,9 @@
     <ClCompile Include="util\log.cpp">
       <Filter>Source Files\util</Filter>
     </ClCompile>
+    <ClCompile Include="ppc\interpreter_fpu.cpp">
+      <Filter>Source Files\ppc</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="interpreterengine.h">

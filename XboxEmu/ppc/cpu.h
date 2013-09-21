@@ -6,43 +6,104 @@
 namespace ppc
 {
 
-/* Page 50 */
-struct Fpscr
+typedef uint64_t reg_t;
+typedef uint64_t ureg_t;
+typedef int64_t sreg_t;
+typedef double freg_t;
+
+enum class Exceptions {
+   SystemReset        = 0x100,
+   MachineCheck       = 0x200,
+   DSI                = 0x300,
+   DataSegment        = 0x380,
+   ISI                = 0x400,
+   InstructionSegment = 0x480,
+   ExternalInterrupt  = 0x500,
+   Alignment          = 0x600,
+   Program            = 0x700,
+   FpuUnavailable     = 0x800,
+   Decrementer        = 0x900,
+   SystemCall         = 0xC00,
+   Trace              = 0xD00,
+   PerformanceMonitor = 0xF00,
+};
+
+union Fpscr
 {
-   uint32_t rn : 2;        /* 00 nearest, 01 zero, 10 +inf, 11 -inf */
-   uint32_t ni : 1;        /* Non-IEEE mode */
-   uint32_t xe : 1;        /* Enable FP Exception: Inexact */
-   uint32_t ze : 1;        /* Enable FP Exception: Zero Divide */
-   uint32_t ue : 1;        /* Enable FP Exception: Underflow */
-   uint32_t oe : 1;        /* Enable FP Exception: Overflow */
-   uint32_t ve : 1;        /* Enable FP Exception: Invalid Operation */
-   uint32_t vxcvi : 1;     /* Enable FP Exception: Invalid Operation for Integer Convert */
-   uint32_t vxsqrt : 1;    /* Enable FP Exception: Invalid Operation for Square Root */
-   uint32_t vxsoft : 1;    /* Enable FP Exception: Invalid Operation for Software Request */
-   uint32_t _reserved : 1;
-   uint32_t fprfUO : 1;    /* FP Result: Unordered or NaN */
-   uint32_t fprfEQ : 1;    /* FP Result: Equal or Zero */
-   uint32_t fprfGT : 1;    /* FP Result: Greater Than or Positive */
-   uint32_t fprfLT : 1;    /* FP Result: Less Than or Negative */
-   uint32_t fprfC : 1;     /* FP Result: Class Descriptor*/
-   uint32_t fi : 1;        /* FP State: Inexact Fraction */
-   uint32_t fr : 1;        /* FP State: Fraction Rounded */
-   uint32_t vxvc : 1;      /* FP Exception: Invalid Operation for Compare */
-   uint32_t vximz : 1;     /* FP Exception: Invalid Operation for [Inf * Zero] */
-   uint32_t vxzdz : 1;     /* FP Exception: Invalid Operation for [Zero / Zero] */
-   uint32_t vxidi : 1;     /* FP Exception: Invalid Operation for [Inf / Inf] */
-   uint32_t vxisi : 1;     /* FP Exception: Invalid Operation for [Inf - Inf] */
-   uint32_t vxsnan : 1;    /* FP Exception: Invalid Operation for SNaN */
-   uint32_t xx : 1;        /* FP Exception: Inexact */
-   uint32_t zx : 1;        /* FP Exception: Zero Divide */
-   uint32_t ux : 1;        /* FP Exception: Underflow */
-   uint32_t ox : 1;        /* FP Exception: Overflow */
-   uint32_t vx : 1;        /* FP Exception: Invalid Operation */
-   uint32_t fex : 1;       /* FP Exception: Any enabled FP Exception has happened */
-   uint32_t fx : 1;        /* FP Exception: Any FP Exception has happened */
+   /* Floating-Point result flags
+   C  <  >  =  ?
+   1  0  0  0  1   Quiet NaN
+   0  1  0  0  1  -Infinity
+   0  1  0  0  0  -Normalised Number
+   1  1  0  0  0  -Denormalised Number
+   1  0  0  1  0  -Zero
+   0  0  0  1  0  +Zero
+   1  0  1  0  0  +Denormalized Number
+   0  0  1  0  0  +Normalized Number
+   0  0  1  0  1  +Infinity
+   */
+
+   enum FloatingPointResultFlags {
+      Unordered         = 1 << 4, // ?
+      Equal             = 1 << 3, // =
+      Positive          = 1 << 2, // >
+      Negative          = 1 << 1, // <
+      ClassDescriptor   = 1 << 0, // C
+   };
+
+   uint32_t value;
+
+   struct {
+      uint32_t : 28;
+      uint32_t cr1 : 4;
+   };
+
+   struct {
+      uint32_t rn : 2;        /* 00 nearest, 01 zero, 10 +inf, 11 -inf */
+      uint32_t ni : 1;        /* Non-IEEE mode */
+      uint32_t xe : 1;        /* Enable FP Exception: Inexact */
+      uint32_t ze : 1;        /* Enable FP Exception: Zero Divide */
+      uint32_t ue : 1;        /* Enable FP Exception: Underflow */
+      uint32_t oe : 1;        /* Enable FP Exception: Overflow */
+      uint32_t ve : 1;        /* Enable FP Exception: Invalid Operation */
+      uint32_t vxcvi : 1;     /* Enable FP Exception: Invalid Operation for Integer Convert */
+      uint32_t vxsqrt : 1;    /* Enable FP Exception: Invalid Operation for Square Root */
+      uint32_t vxsoft : 1;    /* Enable FP Exception: Invalid Operation for Software Request */
+      uint32_t _reserved : 1;
+      uint32_t fprf : 5;      /* Floating-Point result flags */
+      uint32_t fi : 1;        /* FP State: Inexact Fraction */
+      uint32_t fr : 1;        /* FP State: Fraction Rounded */
+      uint32_t vxvc : 1;      /* FP Exception: Invalid Operation for Compare */
+      uint32_t vximz : 1;     /* FP Exception: Invalid Operation for [Inf * Zero] */
+      uint32_t vxzdz : 1;     /* FP Exception: Invalid Operation for [Zero / Zero] */
+      uint32_t vxidi : 1;     /* FP Exception: Invalid Operation for [Inf / Inf] */
+      uint32_t vxisi : 1;     /* FP Exception: Invalid Operation for [Inf - Inf] */
+      uint32_t vxsnan : 1;    /* FP Exception: Invalid Operation for SNaN */
+      uint32_t xx : 1;        /* FP Exception: Inexact */
+      uint32_t zx : 1;        /* FP Exception: Zero Divide */
+      uint32_t ux : 1;        /* FP Exception: Underflow */
+      uint32_t ox : 1;        /* FP Exception: Overflow */
+      uint32_t vx : 1;        /* FP Exception: Invalid Operation */
+      uint32_t fex : 1;       /* FP Exception: Any enabled FP Exception has happened */
+      uint32_t fx : 1;        /* FP Exception: Any FP Exception has happened */
+   };
 };
 
 union Cr {
+   enum Cr0Flags {
+      SummaryOverflow   = 1 << 0,
+      Zero              = 1 << 1,
+      Positive          = 1 << 2,
+      Negative          = 1 << 3,
+   };
+
+   enum Cr1Flags {
+      FloatingPointException        = 1 << 0,
+      FloatingPointEnabledException = 1 << 1,
+      FloatingPointInvalidOperation = 1 << 2,
+      FloatingPointOverflow         = 1 << 3,
+   };
+
    uint32_t value;
 
    struct {
@@ -54,22 +115,6 @@ union Cr {
       uint32_t cr2 : 4;
       uint32_t cr1 : 4;
       uint32_t cr0 : 4;
-   };
-
-   struct {
-      uint32_t : 28;
-      uint32_t summaryOverflow;
-      uint32_t zero;
-      uint32_t positive;
-      uint32_t negative;
-   };
-
-   struct {
-      uint32_t : 28;
-      uint32_t so;
-      uint32_t eq;
-      uint32_t gt;
-      uint32_t lt;
    };
 };
 
@@ -89,10 +134,10 @@ union Xer {
 struct Registers
 {
    /* User Model UISA */
-   uint64_t gpr[32]; /* 32 General Purpose Registers */
-   double fpr[32];   /* 32 Floating Point Registers */
+   reg_t gpr[32]; /* 32 General Purpose Registers */
+   freg_t fpr[32];   /* 32 Floating Point Registers */
    Cr cr;            /* Condition Register 8x 4bit cr0-cr7 */
-   uint32_t fpscr;   /* Floating Point Status & Control Register */
+   Fpscr fpscr;      /* Floating Point Status & Control Register */
    Xer xer;          /* Fixed-Point Exception Register */
    uint64_t lr;      /* Link Register */
    uint64_t ctr;     /* Count Register */
@@ -207,7 +252,7 @@ struct Registers
       case Registers::FPECR:
          return fpecr;
       case Registers::FPSCR:
-         return fpscr;
+         return fpscr.value;
       case Registers::CR:
          return cr.value;
       case Registers::MSR:
@@ -286,7 +331,7 @@ struct Registers
          fpecr = value;
          break;
       case Registers::FPSCR:
-         fpscr = static_cast<uint32_t>(value);
+         fpscr.value = static_cast<uint32_t>(value);
          break;
       case Registers::CR:
          cr.value = static_cast<uint32_t>(value);
@@ -400,6 +445,28 @@ struct Instruction
          uint32_t l : 1;
          uint32_t : 1;
          uint32_t crfd : 3;
+         uint32_t : 6;
+      };
+
+      struct {
+         uint32_t  : 11;
+         uint32_t crbB : 5;
+         uint32_t crbA : 5;
+         uint32_t crbD : 5;
+         uint32_t  : 6;
+      };
+
+      struct {
+         uint32_t : 21;
+         uint32_t th : 2;
+         uint32_t : 9;
+      };
+
+      struct {
+         uint32_t : 11;
+         uint32_t frB : 5;
+         uint32_t frA : 5;
+         uint32_t frD : 5;
          uint32_t : 6;
       };
    };

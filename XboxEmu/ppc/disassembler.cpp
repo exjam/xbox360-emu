@@ -20,11 +20,11 @@ static inline Operand addr(uint64_t value)
    return op;
 }
 
-static inline Operand simm(int64_t value)
+static inline Operand simm(uint32_t value)
 {
    Operand op;
    op.type = Operand::SImm;
-   op.simm.value = value;
+   op.simm.value = bits::signExtend<16>(value);
    return op;
 }
 
@@ -33,6 +33,15 @@ static inline Operand uimm(int64_t value)
    Operand op;
    op.type = Operand::UImm;
    op.uimm.value = value;
+   return op;
+}
+
+static inline Operand crfd(int32_t value, Operand::Access access = Operand::Read)
+{
+   Operand op;
+   op.type = Operand::Crfd;
+   op.crfd.crN = value;
+   op.crfd.access = access;
    return op;
 }
 
@@ -156,7 +165,7 @@ bool addi(State *state, Instruction instr)
    state->result.operands
       << gpr(instr.rD, Operand::Write)
       << gpr(instr.rA)
-      << simm(bits::signExtend<16>(instr.simm));
+      << simm(instr.simm);
 
    if (instr.subop9_oe == ppc::op::addis) {
       state->result.code += 's';
@@ -174,7 +183,7 @@ bool addic(State *state, Instruction instr)
    state->result.operands
       << gpr(instr.rD, Operand::Write)
       << gpr(instr.rA)
-      << simm(bits::signExtend<16>(instr.simm));
+      << simm(instr.simm);
 
    if (instr.subop9_oe == ppc::op::addicr) {
       state->result.code += '.';
@@ -277,6 +286,223 @@ bool bclr(State *state, Instruction instr)
    return true;
 }
 
+/* cmpw, cmpd */
+bool cmp(State *state, Instruction instr)
+{
+   state->result.code = instr.l ? "cmpw" : "cmpd";
+   state->result.name = "Compare";
+   state->result.operands
+      << crfd(instr.crfd, Operand::Write)
+      << gpr(instr.rA)
+      << gpr(instr.rB);
+
+   return true;
+}
+
+/* cmpwi, cmpdi */
+bool cmpi(State *state, Instruction instr)
+{
+   state->result.code = instr.l ? "cmpwi" : "cmpdi";
+   state->result.name = "Compare Immediate";
+   state->result.operands
+      << crfd(instr.crfd, Operand::Write)
+      << gpr(instr.rA)
+      << simm(instr.simm);
+
+   return true;
+}
+
+/* cmplw, cmpld */
+bool cmpl(State *state, Instruction instr)
+{
+   state->result.code = instr.l ? "cmplw" : "cmpld";
+   state->result.name = "Compare Logical";
+   state->result.operands
+      << crfd(instr.crfd, Operand::Write)
+      << gpr(instr.rA)
+      << gpr(instr.rB);
+
+   return true;
+}
+
+/* cmplwi, cmpldi */
+bool cmpli(State *state, Instruction instr)
+{
+   state->result.code = instr.l ? "cmplwi" : "cmpldi";
+   state->result.name = "Compare Logical Immediate";
+   state->result.operands
+      << crfd(instr.crfd, Operand::Write)
+      << gpr(instr.rA)
+      << uimm(instr.uimm);
+
+   return true;
+}
+
+/* crand */
+bool crand(State *state, Instruction instr)
+{
+   state->result.code = "crand";
+   state->result.name = "Condition Register AND";
+   state->result.operands
+      << crfd(instr.crbD, Operand::Write)
+      << crfd(instr.crbA)
+      << crfd(instr.crbB);
+
+   return true;
+}
+
+/* crandc */
+bool crandc(State *state, Instruction instr)
+{
+   state->result.code = "crandc";
+   state->result.name = "Condition Register AND with Complement";
+   state->result.operands
+      << crfd(instr.crbD, Operand::Write)
+      << crfd(instr.crbA)
+      << crfd(instr.crbB);
+
+   return true;
+}
+
+/* creqv */
+bool creqv(State *state, Instruction instr)
+{
+   state->result.code = "creqv";
+   state->result.name = "Condition Register Equivalent";
+   state->result.operands
+      << crfd(instr.crbD, Operand::Write)
+      << crfd(instr.crbA)
+      << crfd(instr.crbB);
+
+   return true;
+}
+
+/* crnand */
+bool crnand(State *state, Instruction instr)
+{
+   state->result.code = "crnand";
+   state->result.name = "Condition Register NAND";
+   state->result.operands
+      << crfd(instr.crbD, Operand::Write)
+      << crfd(instr.crbA)
+      << crfd(instr.crbB);
+
+   return true;
+}
+
+/* crnor */
+bool crnor(State *state, Instruction instr)
+{
+   state->result.code = "crnor";
+   state->result.name = "Condition Register NOR";
+   state->result.operands
+      << crfd(instr.crbD, Operand::Write)
+      << crfd(instr.crbA)
+      << crfd(instr.crbB);
+
+   return true;
+}
+
+/* cror */
+bool cror(State *state, Instruction instr)
+{
+   state->result.code = "cror";
+   state->result.name = "Condition Register OR";
+   state->result.operands
+      << crfd(instr.crbD, Operand::Write)
+      << crfd(instr.crbA)
+      << crfd(instr.crbB);
+
+   return true;
+}
+
+/* crorc */
+bool crorc(State *state, Instruction instr)
+{
+   state->result.code = "crorc";
+   state->result.name = "Condition Register OR with Complement";
+   state->result.operands
+      << crfd(instr.crbD, Operand::Write)
+      << crfd(instr.crbA)
+      << crfd(instr.crbB);
+
+   return true;
+}
+
+/* crxor */
+bool crxor(State *state, Instruction instr)
+{
+   state->result.code = "crxor";
+   state->result.name = "Condition Register XOR";
+   state->result.operands
+      << crfd(instr.crbD, Operand::Write)
+      << crfd(instr.crbA)
+      << crfd(instr.crbB);
+
+   return true;
+}
+
+/* dcbf */
+bool dcbf(State *state, Instruction instr)
+{
+   state->result.code = "dcbf";
+   state->result.name = "Data Cache Block Flush";
+   state->result.operands
+      << gpr(instr.rA)
+      << gpr(instr.rB);
+
+   return true;
+}
+
+/* dcbst */
+bool dcbst(State *state, Instruction instr)
+{
+   state->result.code = "dcbst";
+   state->result.name = "Data Cache Block Store";
+   state->result.operands
+      << gpr(instr.rA)
+      << gpr(instr.rB);
+
+   return true;
+}
+
+/* dcbt */
+bool dcbt(State *state, Instruction instr)
+{
+   state->result.code = "dcbt";
+   state->result.name = "Data Cache Block Touch";
+   state->result.operands
+      << gpr(instr.rA)
+      << gpr(instr.rB)
+      << uimm(instr.th); /* TODO: maybe change this from uimm */
+
+   return true;
+}
+
+/* dcbtst */
+bool dcbtst(State *state, Instruction instr)
+{
+   state->result.code = "dcbtst";
+   state->result.name = "Data Cache Block Touch for Store";
+   state->result.operands
+      << gpr(instr.rA)
+      << gpr(instr.rB);
+
+   return true;
+}
+
+/* dcbz */
+bool dcbz(State *state, Instruction instr)
+{
+   state->result.code = "dcbz";
+   state->result.name = "Data Cache Block Clear to Zero";
+   state->result.operands
+      << gpr(instr.rA)
+      << gpr(instr.rB);
+
+   return true;
+}
+
 /* std, stdu */
 bool std(State *state, Instruction instr)
 {
@@ -286,7 +512,7 @@ bool std(State *state, Instruction instr)
       << gpr(instr.rS)
       << gpr_ofs(instr.rA, bits::signExtend<16>(instr.ds << 2), instr.rc ? Operand::ReadWrite : Operand::Read);
 
-   return false;
+   return true;
 }
 
 /* stw, stwu */
@@ -303,7 +529,7 @@ bool stw(State *state, Instruction instr)
       state->result.name += " with Update";
    }
 
-   return false;
+   return true;
 }
 
 /* mfspr */
