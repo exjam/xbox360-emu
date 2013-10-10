@@ -11,15 +11,12 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="interpreterengine.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="main.cpp">
+    <ClCompile Include="disassembler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="interpreterengine.h">
+    <ClInclude Include="ppc\disassembler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

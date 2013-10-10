@@ -1,0 +1,225 @@
+[Architecture]
+Endian = BigEndian
+
+[Registers]
+// User Model UISA
+gpr = uint64[32]                       // 32 General Purpose Registers
+fpr = double[32]                       // 32 Floating Point Registers
+cr = uint4[8]                          // Condition Registers
+fpscr = uint32 {
+   fx = 0
+   fex = 1
+   vx = 2
+   ox = 3
+   ux = 4
+   zx = 5
+   xx = 6
+   vxsnan = 7
+   vxisi = 8
+   vxidi = 9
+   vxzdz = 10
+   vximz = 11
+   vxvc = 12
+   fr = 13
+   fi = 14
+   fprf = 15...19
+   vxsoft = 21
+   vxsqrt = 22
+   vxcvi = 23
+   ve = 24
+   oe = 25
+   ue = 26
+   ze = 27
+   xe = 28
+   ni = 29
+   rn = 30...31                        // Rounding mode
+}
+xer = uint64 {
+   so = 32                             // Summary Overflow
+   ov = 33                             // Overflow
+   ca = 34                             // Carry
+   bt = 57...63                        // Bytes transferred in lswx/stswx
+}
+lr  = uint64                           // Link Register
+ctr = uint64                           // Count Register
+
+// User Model VEA
+tbu = uint32                           // Time Base Upper
+tbl = uint32                           // Time Base Lower
+
+// Configuration Registers
+msr = uint64                           // Machine State Register
+pvr = uint32                           // Processor Version Register
+
+// Memory Management Registers
+sdr1 = uint64
+asr  = uint64                          // Address Space Register
+
+// Exception Handling Registers
+dar   = uint64                         // Data Address Register
+dsisr = uint32
+srr0  = uint64                         // Save and Restore Registers
+srr1  = uint64
+sprg0 = uint64                         // Software use SPRs
+sprg1 = uint64
+sprg2 = uint64
+sprg3 = uint64
+fpecr = uint64                         // Floating-Point Exception Cause Register
+
+// Misc. Registers
+dec  = uint32                          // Decrementer Register
+dabr = uint64                          // Data Address Breakpoint Register
+pir  = uint64                          // Processor Identification Register
+ear  = uint32                          // External Access Register
+ctrl = uint64                          // Control Register
+iabr = uint64                          // Instruction Address Breakpoint Register
+
+[Instruction Format]
+// Opcodes
+opcd = 0...5
+xo2 = 21...30
+xo3 = 22...30
+xo4 = 26...30
+
+// Instruction data
+bd = 16...29 : value = "(aa ? 0 : state->cia) + signExtend<16>(bd << 2)", base = 16, width = 8, fill = '0'
+bi = 11...15
+bo = 6...10
+crbA = 11...15
+crbB = 16...20
+crbD = 6...10
+crfD = 6...8
+crfS = 11...13
+d = 16...31 : value = "signExtend<16>(d)"
+ds = 16...29 : value = "signExtend<16>(ds << 2), base = 16, width = 8, fill = 0"
+frA = 11...15
+frB = 16...20
+frC = 21...25
+frD = 6...10
+uimm = 16...31
+simm = 16...31 : value = "signExtend<16>(simm)"
+l = 9...10
+li = 6...29 : value = "(aa ? 0 : state->cia) + signExtend<26>(li << 2)", base = 16, width = 8, fill = '0'
+rA = 11...15 : value = "gpr(rA)"
+rB = 16...20 : value = "gpr(rB)"
+rD = 6...10 : value = "gpr(rD)"
+rS = 6...10 : value = "gpr(rS)"
+spr = 11...20
+th = 9...10
+
+// aa and lk effects branch instruction names
+aa = 30 : name = "name + 'a'"
+lk = 31 : name = "name + 'l'"
+
+// oe and rc effects arith instruction names
+oe = 21 : name = "name + '.'"
+rc = 31 : name = "name + 'o'"
+
+[opcd]
+  14 : addi    rD, rA, simm                    : fullname = "Add Immediate"
+  12 : addic   rD, rA, simm                    : fullname = "Add Immediate Carrying"
+  13 : addic.  rD, rA, simm                    : fullname = "Add Immediate Carrying and Record"
+  15 : addis   rD, rA, simm                    : fullname = "Add Immediate Shifted"
+  28 : andi.   rA, rS, uimm                    : fullname = "AND Immediate"
+  29 : andis.  rA, rS, uimm                    : fullname = "AND Immediate Shifted"
+  18 : b       li                              : fullname = "Branch", lk, aa
+  16 : bc      bo, bi, bd                      : fullname = "Branch Conditional", lk, aa
+  11 : cmpi    crfD, l, rA, simm               : fullname = "Compare Immediate"
+  10 : cmpli   crfD, l, rA, uimm               : fullname = "Compare Logical Immediate"
+  38 : stb     rS, d(rA)                       : fullname = "Store Byte"
+  39 : stbu    rS, d(rA)                       : fullname = "Store Byte with Update"
+  44 : sth     rS, d(rA)                       : fullname = "Store Halfword"
+  45 : sthu    rS, d(rA)                       : fullname = "Store Halfword with Update"
+  36 : stw     rS, d(rA)                       : fullname = "Store Word"
+  37 : stwu    rS, d(rA)                       : fullname = "Store Word with Update"
+
+[opcd = 62, rc]
+   0 : std     rS, ds(rA)                      : fullname = "Store Doubleword"
+   1 : stdu    rS, ds(rA)                      : fullname = "Store Doubleword with Update"
+
+[opcd = 19, xo2]
+ 528 : bcctr   bo, bi, bh                      : fullname = "Branch Conditional to Count Register", lk
+  16 : bclr    bo, bi, bh                      : fullname = "Branch Conditional to Link Register", lk
+ 257 : crand   crbD, crbA, crbB                : fullname = "Condition Register AND"
+ 129 : crandc  crbD, crbA, crbB                : fullname = "Condition Register AND with Complement"
+ 289 : creqv   crbD, crbA, crbB                : fullname = "Condition Register Equivalent"
+ 225 : crnand  crbD, crbA, crbB                : fullname = "Condition Register NAND"
+  33 : crnor   crbD, crbA, crbB                : fullname = "Condition Register NOR"
+ 449 : cror    crbD, crbA, crbB                : fullname = "Condition Register OR"
+ 417 : crorc   crbD, crbA, crbB                : fullname = "Condition Register OR with Complement"
+ 193 : crxor   crbD, crbA, crbB                : fullname = "Condition Register XOR"
+
+[opcd = 31, xo2]
+   0 : cmp     crfD, l, rA, rB                 : fullname = "Compare"
+  32 : cmpl    crfD, l, rA, rB                 : fullname = "Compare Logical"
+  58 : cntlzd  rA, rS                          : fullname = "Count Leading Zeros Doubleword"
+  26 : cntlzw  rA, rS                          : fullname = "Count Leading Zeros Word"
+  86 : dcbf    rA, rB                          : fullname = "Data Cache Block Flush"
+  54 : dcbst   rA, rB                          : fullname = "Data Cache Block Store"
+ 278 : dcbt    rA, rB, th                      : fullname = "Data Cache Block Touch"
+ 246 : dcbtst  rA, rB                          : fullname = "Data Cache Block Touch for Store"
+1014 : dcbz    rA, rB                          : fullname = "Data Cache Clear to Zero"
+ 310 : eciwx   rD, rA, rB                      : fullname = "External Control In Word Indexed"
+ 438 : ecowx   rS, rA, rB                      : fullname = "External Control Out Word Indexed"
+ 854 : eieio                                   : fullname = "Enforce In-Order Execution of I/O"
+ 954 : extsb   rA, rS                          : fullname = "Extend Sign Byte", rc
+ 922 : extsh   rA, rS                          : fullname = "Extend Sign Halfword", rc
+ 986 : extsw   rA, rS                          : fullname = "Extend Sign Word", rc
+ 982 : icbi    rA, rB                          : fullname = "Instruction Cache Block Invalidate"
+ 150 : isync   rA, rB                          : fullname = "Instruction Synchronize"
+ 339 : mfspr   rD, spr                         : fullname = "Move from Special-Purpose Register"
+   
+[opcd = 31, xo3]
+ 266 : add     rD, rA, rB                      : fullname = "Add", oe, rc
+  10 : addc    rD, rA, rB                      : fullname = "Add Carrying", oe, rc
+ 138 : adde    rD, rA, rB                      : fullname = "Add Extended", oe, rc
+ 234 : addme   rD, rA                          : fullname = "Add to Minus One Extended", oe, rc
+ 202 : addze   rD, rA                          : fullname = "Add to Zero Extended", oe, rc
+  28 : and     rA, rS, rB                      : fullname = "AND", rc
+  60 : andc    rA, rS, rB                      : fullname = "AND with Complement", rc
+ 489 : divd    rD, rA, rB                      : fullname = "Divide Doubleword", oe, rc
+ 457 : divdu   rD, rA, rB                      : fullname = "Divide Doubleword Unsigned", oe, rc
+ 491 : divw    rD, rA, rB                      : fullname = "Divide Word", oe, rc
+ 459 : divwu   rD, rA, rB                      : fullname = "Divide Word Unsigned", oe, rc
+ 284 : eqv     rA, rS, rB                      : fullname = "Equivalent", rc
+
+[opcd = 59, xo2]
+  21 : fadds   frD, frA, frB                   : fullname = "Floating Add Single", rc
+  18 : fdivs   frD, frA, frB                   : fullname = "Floating Divide Single", rc
+  22 : fsqrts  frD, frB                        : fullname = "Floating Square Root Single", rc
+  20 : fsubs   frD, frA, frB                   : fullname = "Floating Subtract Single", rc
+
+[opcd = 59, xo4]
+  29 : fmadds  frD, frA, frC, frB              : fullname = "Floating Multiply-Add Single", rc
+  28 : fmsubs  frD, frA, frC, frB              : fullname = "Floating Multiply-Subtract Single", rc
+  25 : fmuls   frD, frA, frC                   : fullname = "Floating Multiply Single", rc
+  31 : fnmadds frD, frA, frC, frB              : fullname = "Floating Negative Multiply-Add Single", rc
+  30 : fnmsubs frD, frA, frC, frB              : fullname = "Floating Negative Multiply-Subtract Single", rc
+  24 : fres    frD, frB                        : fullname = "Floating Reciprocal Estimate Single", rc
+
+[opcd = 63, xo2]
+ 264 : fabs    frD, frA                        : fullname = "Floating Absolute Value", rc
+  21 : fadd    frD, frA, frB                   : fullname = "Floating Add (Double-Precision)", rc
+ 846 : fcfid   frD, frB                        : fullname = "Floating Convert from Integer Doubleword", rc
+  32 : fcmpo   crfD, frA, frB                  : fullname = "Floating Compare Ordered", rc
+   0 : fcmpu   crfD, frA, frB                  : fullname = "Floating Compare Unordered", rc
+ 814 : fctid   frD, frB                        : fullname = "Floating Convert to Integer Doubleword", rc
+ 815 : fctidz  frD, frB                        : fullname = "Floating Convert to Integer Doubleword with round toward Zero", rc
+  14 : fctiw   frD, frB                        : fullname = "Floating Convert to Integer Word", rc
+  15 : fctiwz  frD, frB                        : fullname = "Floating Convert to Integer Word with round toward Zero", rc
+  18 : fdiv    frD, frA, frB                   : fullname = "Floating Divide (Double-Precision)", rc
+  72 : fmr     frD, frB                        : fullname = "Floating Move Register (Double-Precision)", rc
+ 136 : fnabs   frD, frB                        : fullname = "Floating Negative Absolute Value", rc
+  40 : fneg    frD, frB                        : fullname = "Floating Negate", rc
+  12 : frsp    frD, frB                        : fullname = "Floating Round to Single", rc
+  22 : fsqrt   frD, frB                        : fullname = "Floating Square Root (Double-Precision)", rc
+  20 : fsub    frD, frA, frB                   : fullname = "Floating Subtract (Double-Precision)", rc
+
+[opcd = 63, xo4]
+  29 : fmadd   frD, frA, frC, frB              : fullname = "Floating Multiply-Add (Double-Precision)", rc
+  28 : fmsub   frD, frA, frC, frB              : fullname = "Floating Multiply-Subtract (Double-Precision)", rc
+  25 : fmul    frD, frA, frC                   : fullname = "Floating Multiply (Double-Precision)", rc
+  31 : fnmadd  frD, frA, frC, frB              : fullname = "Floating Negative Multiply-Add (Double-Precision)", rc
+  30 : fnmsub  frD, frA, frC, frB              : fullname = "Floating Negative Multiply-Subtract (Double-Precision)", rc
+  26 : frsqrte frD, frB                        : fullname = "Floating Reciprocal Square Root Estimate", rc
+  23 : fsel    frD, frA, frC, frB              : fullname = "Floating Select", rc

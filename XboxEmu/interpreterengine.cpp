@@ -1,7 +1,8 @@
 #include "interpreterengine.h"
 
 #include "ppc/cpu.h"
-#include "ppc/decoder.h"
+#include "ppc/interpreter.h"
+#include "ppc/disassembler.h"
 
 #include "util/log.h"
 #include "util/be/memory.h"
@@ -14,7 +15,8 @@ bool InterpreterEngine::run(uint32_t address)
 {
    ppc::Interpreter::State intState;
    ppc::Instruction ins;
-   ppc::Decoder::init();
+   ppc::Interpreter::init();
+   ppc::Disassembler::init();
 
    memset(&intState, 0, sizeof(ppc::Interpreter::State));
 
@@ -31,8 +33,8 @@ bool InterpreterEngine::run(uint32_t address)
 
       ins.value = be::Memory::read<uint32_t>(intState.cia);
 
-      ppc::Decoder::disassemble(&disState, ins);
-      ppc::Decoder::interpret(&intState, ins);
+      ppc::Disassembler::decode(&disState, ins);
+      ppc::Interpreter::decode(&intState, ins);
 
       xDebug() << ppc::Disassembler::toString(&disState).c_str();
 
