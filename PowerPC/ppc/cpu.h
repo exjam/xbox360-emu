@@ -467,7 +467,9 @@ struct Instruction
       };
 
       struct {
-         uint32_t : 11;
+         uint32_t : 1;
+         uint32_t subop5 : 5;
+         uint32_t frC : 5;
          uint32_t frB : 5;
          uint32_t frA : 5;
          uint32_t frD : 5;

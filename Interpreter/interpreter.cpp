@@ -39,11 +39,6 @@ static inline void updateCr0(State *state, uint64_t value)
    state->reg.cr.cr0 = flags;
 }
 
-static inline void updateCr1(State *state, double value)
-{
-   state->reg.cr.cr1 = state->reg.fpscr.cr1;
-}
-
 static inline void updateXerOverflow(State *state, bool overflow)
 {
    state->reg.xer.ov = overflow;
@@ -685,11 +680,8 @@ bool ecowx(State *state, Instruction instr)
 }
 
 /* eieio */
-bool eieio(State *state, Instruction instr)
-{
-   /* TODO: _mm_sfence(); */
-   return false;
-}
+/* TODO: eieio is _mm_sfence(); */
+UNIMPLEMENTED(eieio);
 
 /* eqv */
 bool eqv(State *state, Instruction instr)
@@ -738,6 +730,9 @@ bool extsw(State *state, Instruction instr)
 
    return true;
 }
+
+UNIMPLEMENTED(icbi);
+UNIMPLEMENTED(isync);
 
 /* stb */
 bool stb(State *state, Instruction instr)
