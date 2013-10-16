@@ -475,6 +475,12 @@ struct Instruction
          uint32_t frD : 5;
          uint32_t : 6;
       };
+
+      struct {
+         uint32_t : 21;
+         uint32_t frS : 5;
+         uint32_t : 6;
+      };
    };
 };
 

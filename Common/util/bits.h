@@ -23,6 +23,16 @@ static inline uint64_t swap(uint64_t value)
    return _byteswap_uint64(value);
 }
 
+static inline float swap(float value) 
+{
+   return *reinterpret_cast<float*>(swap(*reinterpret_cast<uint32_t*>(&value)));
+}
+
+static inline double swap(double value) 
+{
+   return *reinterpret_cast<double*>(swap(*reinterpret_cast<uint64_t*>(&value)));
+}
+
 /* Little endian input, big endian result */
 static inline unsigned long beScanBackward(uint32_t value)
 {

@@ -24,6 +24,21 @@ namespace Interpreter
 #define gpr0(id) ((id == 0) ? 0 : state->reg.gpr[id])
 #define fpr(instr) state->reg.fpr[instr]
 
+template<typename T>
+static inline T &getFpr(State *state, int id) { ASSERT(0); return T(); }
+
+template<>
+static inline double &getFpr(State *state, int id)
+{
+   return state->reg.fpr[id];
+}
+
+template<>
+static inline float &getFpr(State *state, int id)
+{
+   return *reinterpret_cast<float*>(&state->reg.fpr[id]);
+}
+
 static inline void updateCr0(State *state, uint64_t value)
 {
    auto flags = 0;
@@ -738,16 +753,33 @@ UNIMPLEMENTED(isync);
 bool stb(State *state, Instruction instr)
 {
    auto ea = gpr0(instr.rA) + bits::signExtend<16>(instr.d);
-   be::Memory::write<uint8_t>(ea, static_cast<uint8_t>(gpr(instr.rS)));
+   be::Memory::write<uint8_t>(ea, *reinterpret_cast<uint8_t*>(&gpr(instr.rS)));
    return true;
 }
 
 /* stbu */
 bool stbu(State *state, Instruction instr)
 {
-   auto ea = gpr0(instr.rA) + bits::signExtend<16>(instr.d);
-   be::Memory::write<uint8_t>(ea, static_cast<uint8_t>(gpr(instr.rS)));
+   auto ea = gpr(instr.rA) + bits::signExtend<16>(instr.d);
+   be::Memory::write<uint8_t>(ea, *reinterpret_cast<uint8_t*>(&gpr(instr.rS)));
    gpr(instr.rA) = ea;
+   return true;
+}
+
+/* stbux */
+bool stbux(State *state, Instruction instr)
+{
+   auto ea = gpr(instr.rA) + gpr(instr.rB);
+   be::Memory::write<uint8_t>(ea, *reinterpret_cast<uint8_t*>(&gpr(instr.rS)));
+   gpr(instr.rA) = ea;
+   return true;
+}
+
+/* stbx */
+bool stbx(State *state, Instruction instr)
+{
+   auto ea = gpr0(instr.rA) + gpr(instr.rB);
+   be::Memory::write<uint8_t>(ea, *reinterpret_cast<uint8_t*>(&gpr(instr.rS)));
    return true;
 }
 
@@ -759,12 +791,107 @@ bool std(State *state, Instruction instr)
    return true;
 }
 
+UNIMPLEMENTED(stdcx);
+
 /* stdu */
 bool stdu(State *state, Instruction instr)
 {
-   auto ea = gpr0(instr.rA) + bits::signExtend<16>(instr.ds << 2);
+   auto ea = gpr(instr.rA) + bits::signExtend<16>(instr.ds << 2);
    be::Memory::write<uint64_t>(ea, gpr(instr.rS));
    gpr(instr.rA) = ea;
+   return true;
+}
+
+/* stdux */
+bool stdux(State *state, Instruction instr)
+{
+   auto ea = gpr(instr.rA) + gpr(instr.rB);
+   be::Memory::write<uint64_t>(ea, gpr(instr.rS));
+   gpr(instr.rA) = ea;
+   return true;
+}
+
+/* stdx */
+bool stdx(State *state, Instruction instr)
+{
+   auto ea = gpr0(instr.rA) + gpr(instr.rB);
+   be::Memory::write<uint64_t>(ea, gpr(instr.rS));
+   return true;
+}
+
+/* stfd */
+bool stfd(State *state, Instruction instr)
+{
+   auto ea = gpr0(instr.rA) + bits::signExtend<16>(instr.d);
+   be::Memory::write<double>(ea, fpr(instr.frS));
+   return true;
+}
+
+/* stfdu */
+bool stfdu(State *state, Instruction instr)
+{
+   auto ea = gpr(instr.rA) + bits::signExtend<16>(instr.d);
+   be::Memory::write<double>(ea, fpr(instr.frS));
+   gpr(instr.rA) = ea;
+   return true;
+}
+
+/* stfdux */
+bool stfdux(State *state, Instruction instr)
+{
+   auto ea = gpr(instr.rA) + gpr(instr.rB);
+   be::Memory::write<double>(ea, fpr(instr.frS));
+   gpr(instr.rA) = ea;
+   return true;
+}
+
+/* stfdx */
+bool stfdx(State *state, Instruction instr)
+{
+   auto ea = gpr0(instr.rA) + gpr(instr.rB);
+   be::Memory::write<double>(ea, fpr(instr.frS));
+   return true;
+}
+
+/* stfiwx */
+bool stfiwx(State *state, Instruction instr)
+{
+   auto ea = gpr0(instr.rA) + gpr(instr.rB);
+   be::Memory::write<float>(ea, getFpr<float>(state, instr.frS));
+   return true;
+}
+
+/* stfs */
+bool stfs(State *state, Instruction instr)
+{
+   auto ea = gpr0(instr.rA) + bits::signExtend<16>(instr.d);
+   be::Memory::write<float>(ea, static_cast<float>(fpr(instr.frS)));
+   return true;
+}
+
+/* stfsu */
+bool stfsu(State *state, Instruction instr)
+{
+   auto ea = gpr(instr.rA) + bits::signExtend<16>(instr.d);
+   be::Memory::write<float>(ea, static_cast<float>(fpr(instr.frS)));
+   gpr(instr.rA) = ea;
+   return true;
+}
+
+/* stfsux */
+bool stfsux(State *state, Instruction instr)
+{
+   auto ea = gpr(instr.rA) + gpr(instr.rB);
+   be::Memory::write<float>(ea, static_cast<float>(fpr(instr.frS)));
+   gpr(instr.rA) = ea;
+   return true;
+}
+
+/* stfsx */
+bool stfsx(State *state, Instruction instr)
+{
+   auto ea = gpr0(instr.rA) + gpr(instr.rB);
+   be::Memory::write<float>(ea, static_cast<float>(fpr(instr.frS)));
    return true;
 }
 
@@ -772,33 +899,76 @@ bool stdu(State *state, Instruction instr)
 bool sth(State *state, Instruction instr)
 {
    auto ea = gpr0(instr.rA) + bits::signExtend<16>(instr.d);
-   be::Memory::write<uint16_t>(ea, static_cast<uint16_t>(gpr(instr.rS)));
+   be::Memory::write<uint16_t>(ea, *reinterpret_cast<uint16_t*>(&gpr(instr.rS)));
    return true;
 }
+
+UNIMPLEMENTED(sthbrx);
 
 /* sthu */
 bool sthu(State *state, Instruction instr)
 {
    auto ea = gpr0(instr.rA) + bits::signExtend<16>(instr.d);
-   be::Memory::write<uint16_t>(ea, static_cast<uint16_t>(gpr(instr.rS)));
+   be::Memory::write<uint16_t>(ea, *reinterpret_cast<uint16_t*>(&gpr(instr.rS)));
    gpr(instr.rA) = ea;
    return true;
 }
+
+/* sthux */
+bool sthux(State *state, Instruction instr)
+{
+   auto ea = gpr(instr.rA) + gpr(instr.rB);
+   be::Memory::write<uint16_t>(ea, *reinterpret_cast<uint16_t*>(&gpr(instr.rS)));
+   gpr(instr.rA) = ea;
+   return true;
+}
+
+/* sthx */
+bool sthx(State *state, Instruction instr)
+{
+   auto ea = gpr0(instr.rA) + gpr(instr.rB);
+   be::Memory::write<uint16_t>(ea, *reinterpret_cast<uint16_t*>(&gpr(instr.rS)));
+   return true;
+}
+
+UNIMPLEMENTED(stmw);
+UNIMPLEMENTED(stswi);
+UNIMPLEMENTED(stswx);
 
 /* stw */
 bool stw(State *state, Instruction instr)
 {
    auto ea = gpr0(instr.rA) + bits::signExtend<16>(instr.d);
-   be::Memory::write<uint32_t>(ea, static_cast<uint32_t>(gpr(instr.rS)));
+   be::Memory::write<uint32_t>(ea, *reinterpret_cast<uint32_t*>(&gpr(instr.rS)));
    return true;
 }
+
+UNIMPLEMENTED(stwbrx);
+UNIMPLEMENTED(stwcx);
 
 /* stwu */
 bool stwu(State *state, Instruction instr)
 {
    auto ea = gpr0(instr.rA) + bits::signExtend<16>(instr.d);
-   be::Memory::write<uint32_t>(ea, static_cast<uint32_t>(gpr(instr.rS)));
+   be::Memory::write<uint32_t>(ea, *reinterpret_cast<uint32_t*>(&gpr(instr.rS)));
    gpr(instr.rA) = ea;
+   return true;
+}
+
+/* stwux */
+bool stwux(State *state, Instruction instr)
+{
+   auto ea = gpr(instr.rA) + gpr(instr.rB);
+   be::Memory::write<uint32_t>(ea, *reinterpret_cast<uint32_t*>(&gpr(instr.rS)));
+   gpr(instr.rA) = ea;
+   return true;
+}
+
+/* stwx */
+bool stwx(State *state, Instruction instr)
+{
+   auto ea = gpr0(instr.rA) + gpr(instr.rB);
+   be::Memory::write<uint32_t>(ea, *reinterpret_cast<uint32_t*>(&gpr(instr.rS)));
    return true;
 }
 

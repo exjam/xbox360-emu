@@ -16,6 +16,16 @@ public:
       return reinterpret_cast<uint8_t*>(VirtualAlloc(reinterpret_cast<LPVOID>(address), size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
    }
 
+   static inline void set(uint64_t address, uint8_t value, uint64_t size)
+   {
+      memset(reinterpret_cast<void*>(address), value, size);
+   }
+
+   static inline void zero(uint64_t address, uint64_t size)
+   {
+      memset(reinterpret_cast<void*>(address), 0, size);
+   }
+
    template<typename T>
    static inline T read(uint64_t address)
    {
@@ -40,14 +50,16 @@ public:
       return bits::swap(*reinterpret_cast<uint64_t*>(address));
    }
 
-   static inline void set(uint64_t address, uint8_t value, uint64_t size)
+   template<>
+   static inline float read(uint64_t address)
    {
-      memset(reinterpret_cast<void*>(address), value, size);
+      return bits::swap(*reinterpret_cast<float*>(address));
    }
 
-   static inline void zero(uint64_t address, uint64_t size)
+   template<>
+   static inline double read(uint64_t address)
    {
-      memset(reinterpret_cast<void*>(address), 0, size);
+      return bits::swap(*reinterpret_cast<double*>(address));
    }
 
    template<typename T>
@@ -72,6 +84,18 @@ public:
    static inline void write(uint64_t address, const uint64_t &value)
    {
       *reinterpret_cast<uint64_t*>(address) = bits::swap(value);
+   }
+
+   template<>
+   static inline void write(uint64_t address, const float &value)
+   {
+      *reinterpret_cast<float*>(address) = bits::swap(value);
+   }
+
+   template<>
+   static inline void write(uint64_t address, const double &value)
+   {
+      *reinterpret_cast<double*>(address) = bits::swap(value);
    }
 
 private:
