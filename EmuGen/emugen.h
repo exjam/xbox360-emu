@@ -18,12 +18,14 @@ protected:
    bool createInstructionTableHeader(const std::string &path);
    bool createInstructionTableSource(const std::string &path);
 
+   bool createDisassembler(const std::string &path);
+
    ast_insf_field *findInstructionField(const std::string &name);
    static std::string getSafeFunctionName(const std::string &name);
 
 private:
    ast_root m_ast;
-   std::vector<std::pair<std::string, int>> m_instructionList;
+   std::vector<ast_opcd_def *> m_instructionList;
 };
 
 #endif // ifdef EMUGEN_H

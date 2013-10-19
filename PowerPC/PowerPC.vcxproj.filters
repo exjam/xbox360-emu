@@ -16,9 +16,6 @@
     <ClInclude Include="ppc\instructions.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ppc\util.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="emugen_instr_list.h">
       <Filter>Generated Files</Filter>
     </ClInclude>

@@ -82,7 +82,7 @@ xo3 = 22...30
 xo4 = 26...30
 
 // Instruction data
-bd = 16...29 : value = "(aa ? 0 : state->cia) + signExtend<16>(bd << 2)", base = 16, width = 8, fill = '0'
+bd = 16...29 : disasm = "addr(bd)", value = "(aa ? 0 : state->cia) + signExtend<16>(bd << 2)"
 bi = 11...15
 bo = 6...10
 crbA = 11...15
@@ -99,11 +99,11 @@ frD = 6...10
 uimm = 16...31
 simm = 16...31 : value = "signExtend<16>(simm)"
 l = 9...10
-li = 6...29 : value = "(aa ? 0 : state->cia) + signExtend<26>(li << 2)", base = 16, width = 8, fill = '0'
-rA = 11...15 : value = "gpr(rA)"
-rB = 16...20 : value = "gpr(rB)"
-rD = 6...10 : value = "gpr(rD)"
-rS = 6...10 : value = "gpr(rS)"
+li = 6...29 : disasm = "addr(li)", value = "(aa ? 0 : state->cia) + signExtend<26>(li << 2)"
+rA = 11...15 : disasm = "gpr(rA)"
+rB = 16...20 : disasm = "gpr(rB)"
+rD = 6...10 : disasm = "gpr(rD)"
+rS = 6...10 : disasm = "gpr(rS)"
 spr = 11...20
 th = 9...10
 

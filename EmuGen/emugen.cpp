@@ -31,6 +31,31 @@ bool EmuGen::run(const std::string &definition, const std::string &outDirectory)
    createInstructionTableHeader(outDirectory + "/emugen_instr_table.h");
    createInstructionTableSource(outDirectory + "/emugen_instr_table.cpp");
 
+   createDisassembler(outDirectory + "/emugen_instr_disasm.cpp");
+
+   return true;
+}
+
+bool EmuGen::createDisassembler(const std::string &path)
+{
+   std::fstream out;
+   out.open(path, std::ifstream::out);
+
+   if (!out.is_open()) {
+      std::cout << "Could not open " << path << " for writing" << std::endl;
+      return false;
+   }
+
+   for (auto &instr : m_instructionList) {
+	  out << "/* " << instr->disasm.name.value << " */" << std::endl;
+	  out << "bool " << getSafeFunctionName(instr->disasm.name.value) << "(State *state, Instruction instr)" << std::endl;
+      out << "{" << std::endl;
+      out << "}" << std::endl;
+      out << std::endl;
+   }
+
+   out.close();
+   std::cout << "EmuGen: " << path << std::endl;
    return true;
 }
 
@@ -46,25 +71,26 @@ bool EmuGen::createInstructionList(const std::string &path)
 
    for (auto &group : m_ast.opcodes) {
       for (auto &opcode : group.opcodes) {
-         m_instructionList.push_back(std::make_pair(opcode.disasm.name.value, opcode.id.value));
+         m_instructionList.push_back(&opcode);
       }
    }
 
    std::sort(m_instructionList.begin(),
              m_instructionList.end(),
-             [](const std::pair<std::string, int> &lhs, const std::pair<std::string, int> &rhs) {
-                return lhs.first < rhs.first;
+             [](ast_opcd_def *lhs, ast_opcd_def *rhs) {
+                return lhs->disasm.name.value < rhs->disasm.name.value;
              });
 
    out << "enum InstructionList {" << std::endl;
 
    for (auto &instr : m_instructionList) {
-      out << "   " << getSafeFunctionName(instr.first) << " = " << instr.second << "," << std::endl;
+      out << "   " << getSafeFunctionName(instr->disasm.name.value) << " = " << instr->id.value << "," << std::endl;
    }
 
    out << "};" << std::endl;
 
    out.close();
+   std::cout << "EmuGen: " << path << std::endl;
    return true;
 }
 
@@ -83,10 +109,11 @@ bool EmuGen::createInstructionTableHeader(const std::string &path)
    out << std::endl;
 
    for (auto &instr : m_instructionList) {
-      out << "bool " << getSafeFunctionName(instr.first) << "(State *state, Instruction instr);" << std::endl;
+      out << "bool " << getSafeFunctionName(instr->disasm.name.value) << "(State *state, Instruction instr);" << std::endl;
    }
 
    out.close();
+   std::cout << "EmuGen: " << path << std::endl;
    return true;
 }
 
@@ -251,7 +278,7 @@ bool EmuGen::createInstructionTableSource(const std::string &path)
 
             if (endian == ast_arch::BigEndian) {
                shift = 31 - node->field->bitrange.end.value;
-            } else if (endian == ast_arch::LittleEndian) {
+            } else {
                shift = node->field->bitrange.start.value;
             }
 
@@ -324,6 +351,7 @@ bool EmuGen::createInstructionTableSource(const std::string &path)
    out << "}" << std::endl;
 
    out.close();
+   std::cout << "EmuGen: " << path << std::endl;
    return true;
 }
 

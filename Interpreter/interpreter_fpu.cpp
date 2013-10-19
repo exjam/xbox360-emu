@@ -1,5 +1,6 @@
 #include "ppc/interpreter.h"
 #include "ppc/instructions.h"
+#include "ppc/fpu.h"
 
 #include "util/log.h"
 #include "util/bits.h"
@@ -8,12 +9,6 @@
 #include <limits>
 #include <float.h>
 #include <cmath>
-
-/* Why doesnt VS2012 have this function??? */
-double trunc(double value)
-{
-   return (value < 0) ? ceil(value) : floor(value);
-}
 
 namespace ppc 
 {
@@ -27,238 +22,29 @@ namespace Interpreter
       return false; \
    }
 
-#define sprSplit(instr) (((instr.spr & 0x1f) << 5) | ((instr.spr >> 5) & 0x1f))
-#define gpr(id) state->reg.gpr[id]
-#define gpr0(id) ((id == 0) ? 0 : state->reg.gpr[id])
 #define fpr(id) state->reg.fpr[id]
+#define crn(n) bits::field<uint32_t>(state->reg.cr.value, n * 4, n)
+#define fpscr(n) bits::field<uint32_t>(state->reg.fpscr.value, n * 4, n)
 
-template<typename T>
-static inline T &getFpr(State *state, int id) { ASSERT(0); return T(); }
-
-template<>
-static inline double &getFpr(State *state, int id)
+template<typename DstType, typename SrcType>
+static inline DstType& reinterpret(SrcType& value)
 {
-   return state->reg.fpr[id];
+   return *reinterpret_cast<DstType*>(&value);
 }
 
-template<>
-static inline float &getFpr(State *state, int id)
+static inline void updateVx(State *state)
 {
-   return *reinterpret_cast<float*>(&state->reg.fpr[id]);
+   Fpscr fpscr = state->reg.fpscr;
+   fpscr.vx = fpscr.vxsnan | fpscr.vxisi | fpscr.vxidi | fpscr.vxzdz | fpscr.vximz | fpscr.vxvc | fpscr.vxsqrt | fpscr.vxsoft | fpscr.vxcvi;
+   state->reg.fpscr = fpscr;
 }
 
-template<typename T>
-static inline void setFpr(State *state, int id, T value) { ASSERT(0); return T(); }
-
-template<>
-static inline void setFpr(State *state, int id, double value)
+static inline void updateFexVx(State *state)
 {
-   state->reg.fpr[id] = value;
-}
-
-template<>
-static inline void setFpr(State *state, int id, float value)
-{
-   *reinterpret_cast<float*>(&state->reg.fpr[id]) = value;
-}
-
-static inline void setCrN(State *state, uint32_t crN, uint32_t flags)
-{
-   crN = (7 - crN) * 4;
-   state->reg.cr.value &= ~(0xF << crN);
-   state->reg.cr.value |= (flags << crN);
-}
-
-static inline uint32_t getCrN(State *state, uint32_t crN) 
-{
-   crN = (7 - crN) * 4;
-   return (state->reg.cr.value >> crN) & 0xF;
-}
-
-static inline bool isNegativeInfinity(float value)
-{
-   float negativeInfinity = std::numeric_limits<float>::infinity();
-   uint32_t bitsC = *reinterpret_cast<uint32_t*>(&negativeInfinity);
-   uint32_t bitsV = *reinterpret_cast<uint32_t*>(&value);
-   bitsC |=  1u << 31;
-   return bitsC == bitsV;
-}
-
-static inline bool isNegativeInfinity(double value)
-{
-   double negativeInfinity = std::numeric_limits<double>::infinity();
-   uint64_t bitsC = *reinterpret_cast<uint64_t*>(&negativeInfinity);
-   uint64_t bitsV = *reinterpret_cast<uint64_t*>(&value);
-   bitsC |=  1ull << 63;
-   return bitsC == bitsV;
-}
-
-static inline bool isPositiveInfinity(float value)
-{
-   float positiveInfinity = std::numeric_limits<float>::infinity();
-   uint32_t bitsC = *reinterpret_cast<uint32_t*>(&positiveInfinity);
-   uint32_t bitsV = *reinterpret_cast<uint32_t*>(&value);
-   return bitsC == bitsV;
-}
-
-static inline bool isPositiveInfinity(double value)
-{
-   double positiveInfinity = std::numeric_limits<double>::infinity();
-   uint64_t bitsC = *reinterpret_cast<uint64_t*>(&positiveInfinity);
-   uint64_t bitsV = *reinterpret_cast<uint64_t*>(&value);
-   return bitsC == bitsV;
-}
-
-template<typename T>
-static inline T getNegativeInfinity() { ASSERT(0); return T(); }
-
-template<>
-static inline double getNegativeInfinity()
-{
-   double negativeInfinity = std::numeric_limits<double>::infinity();
-   *reinterpret_cast<uint64_t*>(&negativeInfinity) |= 1ull << 63;
-   return negativeInfinity;
-}
-
-template<typename T>
-static inline T getPositiveInfinity()
-{
-   return std::numeric_limits<T>::infinity();
-}
-
-template<typename T>
-static inline T getNegativeZero() { ASSERT(0); return T(); }
-
-template<>
-static inline double getNegativeZero()
-{
-   double negativeZero = 0.0;
-   *reinterpret_cast<uint64_t*>(&negativeZero) |= 1ull << 63;
-   return negativeZero;
-}
-
-template<>
-static inline float getNegativeZero()
-{
-   float negativeZero = 0.0f;
-   *reinterpret_cast<uint32_t*>(&negativeZero) |= 1 << 31;
-   return negativeZero;
-}
-
-template<typename T>
-static inline T getQuietNaN()
-{
-   return std::numeric_limits<T>::quiet_NaN();
-}
-
-template<typename T>
-static inline T getSignalingNaN()
-{
-   return std::numeric_limits<T>::signaling_NaN();
-}
-
-static inline bool isZero(float value)
-{
-   return std::abs(value) == 0.0f;
-}
-
-static inline bool isZero(double value)
-{
-   return std::abs(value) == 0.0;
-}
-
-static inline bool isNegative(float value)
-{
-   uint32_t bitsV = *reinterpret_cast<uint32_t*>(&value);
-   return (bitsV >> 31) != 0;
-}
-
-static inline bool isNegative(double value)
-{
-   uint64_t bitsV = *reinterpret_cast<uint64_t*>(&value);
-   return (bitsV >> 63) != 0;
-}
-
-static inline bool isNegativeZero(float value)
-{
-   return isZero(value) && isNegative(value);
-}
-
-static inline bool isNegativeZero(double value)
-{
-   return isZero(value) && isNegative(value);
-}
-
-static inline bool isPositiveZero(float value)
-{
-   return isZero(value) && !isNegative(value);
-}
-
-static inline bool isPositiveZero(double value)
-{
-   return isZero(value) && !isNegative(value);
-}
-
-static inline bool isInfinity(float value)
-{
-   float infinity = std::numeric_limits<float>::infinity();
-   uint32_t bitsC = *reinterpret_cast<uint32_t*>(&infinity);
-   uint32_t bitsV = *reinterpret_cast<uint32_t*>(&value);
-   bitsC |=  1u << 31;
-   bitsV |=  1u << 31;
-   return bitsC == bitsV;
-}
-
-static inline bool isInfinity(double value)
-{
-   double infinity = std::numeric_limits<double>::infinity();
-   uint64_t bitsC = *reinterpret_cast<uint64_t*>(&infinity);
-   uint64_t bitsV = *reinterpret_cast<uint64_t*>(&value);
-   bitsC |=  1ull << 63;
-   bitsV |=  1ull << 63;
-   return bitsC == bitsV;
-}
-
-static inline bool isSignallingNaN(float value)
-{
-   float sNaN = std::numeric_limits<float>::signaling_NaN();
-   uint32_t bitsC = *reinterpret_cast<uint32_t*>(&sNaN);
-   uint32_t bitsV = *reinterpret_cast<uint32_t*>(&value);
-   return bitsC == bitsV;
-}
-
-static inline bool isSignallingNaN(double value)
-{
-   double sNaN = std::numeric_limits<double>::signaling_NaN();
-   uint64_t bitsC = *reinterpret_cast<uint64_t*>(&sNaN);
-   uint64_t bitsV = *reinterpret_cast<uint64_t*>(&value);
-   return bitsC == bitsV;
-}
-
-static inline bool isQuietNaN(float value)
-{
-   float qNaN = std::numeric_limits<float>::quiet_NaN();
-   uint32_t bitsC = *reinterpret_cast<uint32_t*>(&qNaN);
-   uint32_t bitsV = *reinterpret_cast<uint32_t*>(&value);
-   return bitsC == bitsV;
-}
-
-static inline bool isQuietNaN(double value)
-{
-   double qNaN = std::numeric_limits<double>::quiet_NaN();
-   uint64_t bitsC = *reinterpret_cast<uint64_t*>(&qNaN);
-   uint64_t bitsV = *reinterpret_cast<uint64_t*>(&value);
-   return bitsC == bitsV;
-}
-
-static inline bool isNaN(float value)
-{
-   return isSignallingNaN(value) || isQuietNaN(value);
-}
-
-static inline bool isNaN(double value)
-{
-   return _isnan(value) != 0;
+   Fpscr fpscr = state->reg.fpscr;
+   fpscr.vx = fpscr.vxsnan | fpscr.vxisi | fpscr.vxidi | fpscr.vxzdz | fpscr.vximz | fpscr.vxvc | fpscr.vxsqrt | fpscr.vxsoft | fpscr.vxcvi;
+   fpscr.fex = (fpscr.vx & fpscr.ve) | (fpscr.ox & fpscr.oe) | (fpscr.ux & fpscr.ue) | (fpscr.zx & fpscr.ze) | (fpscr.xx & fpscr.xe);
+   state->reg.fpscr = fpscr;
 }
 
 static inline void updateFpscr(State *state)
@@ -355,7 +141,7 @@ static inline void updateCr1(State *state)
    state->reg.cr.cr1 = state->reg.fpscr.cr1;
 }
 
-/* fabs */
+/* Floating Absolute Value */
 bool fabs(State *state, Instruction instr)
 {
    fpr(instr.frD) = std::fabs(fpr(instr.frB));
@@ -367,21 +153,20 @@ bool fabs(State *state, Instruction instr)
    return true;
 }
 
-/* fadd, fadd., fadds, fadds. */
+/* Floating Add x */
 template<typename Type>
 bool faddx(State *state, Instruction instr)
 {
-   Type a = getFpr<Type>(state, instr.frA);
-   Type b = getFpr<Type>(state, instr.frB);
-   Type r;
+   auto a = fpr(instr.frA);
+   auto b = fpr(instr.frB);
 
-   state->reg.fpscr.vxsnan |= isSignallingNaN(a) || isSignallingNaN(b);
-   state->reg.fpscr.vxisi  |= isInfinity(a) && isInfinity(b);
+   state->reg.fpscr.vxsnan |= fpu::isSignalingNaN(a) || fpu::isSignalingNaN(b);
+   state->reg.fpscr.vxisi  |= fpu::isInfinity(a) && fpu::isInfinity(b);
 
-   r = a + b;
+   auto r = a + b;
    updateFpscr(state);
-   updateFprf(state, fpr(instr.frD));
-   setFpr<Type>(state, instr.frD, r);
+   updateFprf(state, r);
+   fpr(instr.frD) = r;
 
    if (instr.rc) {
       updateCr1(state);
@@ -390,24 +175,24 @@ bool faddx(State *state, Instruction instr)
    return true;
 }
 
-/* fadd, fadd. */
+/* Floating Add */
 bool fadd(State *state, Instruction instr)
 {
    return faddx<double>(state, instr);
 }
 
-/* fadds, fadds. */
+/* Floating Add Single */
 bool fadds(State *state, Instruction instr)
 {
    return faddx<float>(state, instr);
 }
 
-/* fcfid */
+/* Floating Convert from Integer Doubleword  */
 bool fcfid(State *state, Instruction instr)
 {
-   uint64_t value = *reinterpret_cast<uint64_t*>(&fpr(instr.frB));
+   fpu::Double dbl = fpr(instr.frB);
 
-   fpr(instr.frD) = static_cast<double>(value);
+   fpr(instr.frD) = static_cast<double>(dbl.uv);
    updateFpscr(state);
    updateFprf(state, fpr(instr.frD));
 
@@ -418,14 +203,20 @@ bool fcfid(State *state, Instruction instr)
    return true;
 }
 
-/* fcmpo, fcmpu */
+/* Floating Compare x */
+enum Order {
+   Unordered = 0,
+   Ordered = 1
+};
+
+template<int Order>
 bool fcmp(State *state, Instruction instr)
 {
-   double a = fpr(instr.frA);
-   double b = fpr(instr.frB);
+   auto a = fpr(instr.frA);
+   auto b = fpr(instr.frB);
    auto flags = 0;
 
-   if (isNaN(a) || isNaN(b)) {
+   if (fpu::isNaN(a) || fpu::isNaN(b)) {
       flags = ppc::Fpscr::Unordered;
    } else if (a < b) {
       flags = ppc::Fpscr::Negative;
@@ -436,17 +227,17 @@ bool fcmp(State *state, Instruction instr)
    }
 
    state->reg.fpscr.fprf = flags;
-   setCrN(state, instr.crfd, flags);
+   crn(instr.crfD) = flags;
    
-   if (isSignallingNaN(a) || isSignallingNaN(b)) {
+   if (fpu::isSignalingNaN(a) || fpu::isSignalingNaN(b)) {
       state->reg.fpscr.vxsnan = 1;
 
-      if (instr.subop10 == ppc::op::fcmpo && !state->reg.fpscr.ve) {
+      if (Order == Ordered && !state->reg.fpscr.ve) {
          state->reg.fpscr.vxvc = 1;
       }
 
       state->reg.fpscr.fx = 1;
-   } else if (instr.subop10 == ppc::op::fcmpo && (isQuietNaN(a) || isQuietNaN(b))) {
+   } else if (Order == Ordered && (fpu::isQuietNaN(a) || fpu::isQuietNaN(b))) {
       state->reg.fpscr.vxvc = 1;
       state->reg.fpscr.fx = 1;
    }
@@ -454,41 +245,48 @@ bool fcmp(State *state, Instruction instr)
    return true;
 }
 
-/* fcmpo */
+/* Floating Compare */
 bool fcmpo(State *state, Instruction instr)
 {
-   return fcmp(state, instr);
+   return fcmp<Ordered>(state, instr);
 }
 
-/* fcmpu */
+/* Floating Compare Unordered */
 bool fcmpu(State *state, Instruction instr)
 {
-   return fcmp(state, instr);
+   return fcmp<Unordered>(state, instr);
 }
 
-/* fctid, fctid., fctidz, fctidz. */
-bool fctidx(State *state, Instruction instr)
-{
-   uint64_t value;
+/* Floating Convert to Integer x */
+enum FctiRounding {
+   RoundDefault = 0,
+   RoundToZero = 1
+};
 
-   if (fpr(instr.frB) > static_cast<double>((1ull << 63) - 1ull)) {
-      value = (1ull << 63) - 1;
-   } else if (fpr(instr.frB) < static_cast<double>(-(1ll << 63))) {
-      value = 1ull << 63;
-   } else if (instr.subop10 == ppc::op::fctid) {
-      /* TODO: fctid use rounding mode in FPSCR[RN] */
-      value = static_cast<uint64_t>(fpr(instr.frB));
-   } else if (instr.subop10 == ppc::op::fctidz) {
-      value = static_cast<uint64_t>(trunc(fpr(instr.frB)));
+template<typename DstType, int Rounding>
+bool fctixx(State *state, Instruction instr)
+{
+   DstType value;
+
+   if (fpr(instr.frB) > std::numeric_limits<DstType>::max()) {
+      value = std::numeric_limits<DstType>::max();
+   } else if (fpr(instr.frB) < std::numeric_limits<DstType>::min()) {
+      value = std::numeric_limits<DstType>::min();
+   } else if (Rounding == RoundToZero) {
+      value = static_cast<DstType>(std::trunc(fpr(instr.frB)));
+   } else {
+      /* TODO: use rounding mode in FPSCR[RN] */
+      value = static_cast<DstType>(fpr(instr.frB));
    }
 
    updateFpscr(state);
 
+   /* TODO: is this always done? */
    if (static_cast<double>(value) > instr.frB) {
       state->reg.fpscr.fr = 1;
    }
 
-   *reinterpret_cast<uint64_t*>(&fpr(instr.frD)) = value;
+   reinterpret<DstType>(fpr(instr.frB)) = value;
 
    if (instr.rc) {
       updateCr1(state);
@@ -497,77 +295,45 @@ bool fctidx(State *state, Instruction instr)
    return true;
 }
 
-/* fctid, fctid. */
+/* Floating Convert to Integer Doubleword */
 bool fctid(State *state, Instruction instr)
 {
-   return fctidx(state, instr);
+   return fctixx<int64_t, RoundDefault>(state, instr);
 }
 
-/* fctidz, fctidz. */
+/* Floating Convert to Integer Doubleword with Round to Zero */
 bool fctidz(State *state, Instruction instr)
 {
-   return fctidx(state, instr);
+   return fctixx<int64_t, RoundToZero>(state, instr);
 }
 
-/* fctiw, fctiw., fctiwz, fctiwz. */
-bool fctiwx(State *state, Instruction instr)
-{
-   uint32_t value;
-
-   if (fpr(instr.frB) > static_cast<double>((1u << 31) - 1u)) {
-      value = (1u << 31) - 1;
-   } else if (fpr(instr.frB) < static_cast<double>(-(1 << 31))) {
-      value = 1u << 31;
-   } else if (instr.subop10 == ppc::op::fctid) {
-      /* TODO: fctid use rounding mode in FPSCR[RN] */
-      value = static_cast<uint32_t>(fpr(instr.frB));
-   } else if (instr.subop10 == ppc::op::fctidz) {
-      value = static_cast<uint32_t>(trunc(fpr(instr.frB)));
-   }
-
-   updateFpscr(state);
-
-   if (static_cast<double>(value) > instr.frB) {
-      state->reg.fpscr.fr = 1;
-   }
-
-   *reinterpret_cast<uint32_t*>(&fpr(instr.frD)) = value;
-
-   if (instr.rc) {
-      updateCr1(state);
-   }
-
-   return true;
-}
-
-/* fctiw, fctiw. */
+/* Floating Convert to Integer Word */
 bool fctiw(State *state, Instruction instr)
 {
-   return fctiwx(state, instr);
+   return fctixx<int32_t, RoundDefault>(state, instr);
 }
 
-/* fctiwz, fctiwz. */
+/* Floating Convert to Integer Word with Round to Zero */
 bool fctiwz(State *state, Instruction instr)
 {
-   return fctiwx(state, instr);
+   return fctixx<int32_t, RoundToZero>(state, instr);
 }
 
-/* fdiv, fdiv., fdivs, fdivs. */
+/* Floating Divide x */
 template<typename Type>
 bool fdivx(State *state, Instruction instr)
 {
-   Type a = getFpr<Type>(state, instr.frA);
-   Type b = getFpr<Type>(state, instr.frB);
-   Type r;
+   auto a = fpr(instr.frA);
+   auto b = fpr(instr.frB);
 
-   state->reg.fpscr.vxzdz  |= isZero(a) && isZero(b);
-   state->reg.fpscr.vxsnan |= isSignallingNaN(a) || isSignallingNaN(b);
-   state->reg.fpscr.vxidi  |= isInfinity(a) && isInfinity(b);
+   state->reg.fpscr.vxzdz  |= fpu::isZero(a) && fpu::isZero(b);
+   state->reg.fpscr.vxsnan |= fpu::isSignalingNaN(a) || fpu::isSignalingNaN(b);
+   state->reg.fpscr.vxidi  |= fpu::isInfinity(a) && fpu::isInfinity(b);
 
-   r = a / b;
+   auto r = a / b;
    updateFpscr(state);
    updateFprf(state, r);
-   setFpr<Type>(state, instr.frD, r);
+   fpr(instr.frD) = r;
 
    if (instr.rc) {
       updateCr1(state);
@@ -576,35 +342,34 @@ bool fdivx(State *state, Instruction instr)
    return true;
 }
 
-/* fdiv, fdiv. */
+/* Floating Divide */
 bool fdiv(State *state, Instruction instr)
 {
    return fdivx<double>(state, instr);
 }
 
-/* fdivs, fdivs. */
+/* Floating Divide Single */
 bool fdivs(State *state, Instruction instr)
 {
    return fdivx<float>(state, instr);
 }
 
-/* fmadd, fmadd., fmadds, fmadds. */
+/* Floating Multiply-Add x */
 template<typename Type>
 bool fmaddx(State *state, Instruction instr)
 {
-   Type a = getFpr<Type>(state, instr.frA);
-   Type b = getFpr<Type>(state, instr.frB);
-   Type c = getFpr<Type>(state, instr.frC);
-   Type r;
+   auto a = fpr(instr.frA);
+   auto b = fpr(instr.frB);
+   auto c = fpr(instr.frC);
 
-   state->reg.fpscr.vximz  |= isInfinity(a) && isZero(c);
-   state->reg.fpscr.vxsnan |= isSignallingNaN(a) || isSignallingNaN(b) || isSignallingNaN(c);
-   state->reg.fpscr.vxisi  |= (isInfinity(a) || isInfinity(c)) && isInfinity(b);
+   state->reg.fpscr.vximz  |= fpu::isInfinity(a) && fpu::isZero(c);
+   state->reg.fpscr.vxsnan |= fpu::isSignalingNaN(a) || fpu::isSignalingNaN(b) || fpu::isSignalingNaN(c);
+   state->reg.fpscr.vxisi  |= (fpu::isInfinity(a) || fpu::isInfinity(c)) && fpu::isInfinity(b);
 
-   r = (a * c) + b;
+   auto r = (a * c) + b;
    updateFpscr(state);
    updateFprf(state, r);
-   setFpr<Type>(state, instr.frD, r);
+   fpr(instr.frD) = r;
 
    if (instr.rc) {
       updateCr1(state);
@@ -613,19 +378,19 @@ bool fmaddx(State *state, Instruction instr)
    return true;
 }
 
-/* fmadd, fmadd. */
+/* Floating Multiply-Add */
 bool fmadd(State *state, Instruction instr)
 {
    return fmaddx<double>(state, instr);
 }
 
-/* fmadds, fmadds. */
+/* Floating Multiply-Add Single */
 bool fmadds(State *state, Instruction instr)
 {
    return fmaddx<float>(state, instr);
 }
 
-/* fmr, fmr. */
+/* Floating Move Register */
 bool fmr(State *state, Instruction instr)
 {
    fpr(instr.frD) = fpr(instr.frB);
@@ -637,23 +402,22 @@ bool fmr(State *state, Instruction instr)
    return true;
 }
 
-/* fmsub, fmsub., fmsubs, fmsubs. */
+/* Floating Multiply-Subtract x */
 template<typename Type>
 bool fmsubx(State *state, Instruction instr)
 {
-   Type a = getFpr<Type>(state, instr.frA);
-   Type b = getFpr<Type>(state, instr.frB);
-   Type c = getFpr<Type>(state, instr.frC);
-   Type r;
+   auto a = fpr(instr.frA);
+   auto b = fpr(instr.frB);
+   auto c = fpr(instr.frC);
 
-   state->reg.fpscr.vximz  |= isInfinity(a) && isZero(c);
-   state->reg.fpscr.vxsnan |= isSignallingNaN(a) || isSignallingNaN(b) || isSignallingNaN(c);
-   state->reg.fpscr.vxisi  |= (isInfinity(a) || isInfinity(c)) && isInfinity(b);
+   state->reg.fpscr.vximz  |= fpu::isInfinity(a) && fpu::isZero(c);
+   state->reg.fpscr.vxsnan |= fpu::isSignalingNaN(a) || fpu::isSignalingNaN(b) || fpu::isSignalingNaN(c);
+   state->reg.fpscr.vxisi  |= (fpu::isInfinity(a) || fpu::isInfinity(c)) && fpu::isInfinity(b);
 
-   r = (a * c) - b;
+   auto r = (a * c) - b;
    updateFpscr(state);
    updateFprf(state, r);
-   setFpr<Type>(state, instr.frD, r);
+   fpr(instr.frD) = r;
 
    if (instr.rc) {
       updateCr1(state);
@@ -662,33 +426,32 @@ bool fmsubx(State *state, Instruction instr)
    return true;
 }
 
-/* fmsub, fmsub. */
+/* Floating Multiply-Subtract */
 bool fmsub(State *state, Instruction instr)
 {
    return fmsubx<double>(state, instr);
 }
 
-/* fmsubs, fmsubs. */
+/* Floating Multiply-Subtract Single */
 bool fmsubs(State *state, Instruction instr)
 {
    return fmsubx<float>(state, instr);
 }
 
-/* fmul, fmul., fmuls, fmuls. */
+/* Floating Multiply x */
 template<typename Type>
 bool fmulx(State *state, Instruction instr)
 {
-   Type a = getFpr<Type>(state, instr.frA);
-   Type c = getFpr<Type>(state, instr.frC);
-   Type r;
+   auto a = fpr(instr.frA);
+   auto c = fpr(instr.frC);
 
-   state->reg.fpscr.vximz  |= isInfinity(a) && isZero(c);
-   state->reg.fpscr.vxsnan |= isSignallingNaN(a) || isSignallingNaN(c);
+   state->reg.fpscr.vximz  |= fpu::isInfinity(a) && fpu::isZero(c);
+   state->reg.fpscr.vxsnan |= fpu::isSignalingNaN(a) || fpu::isSignalingNaN(c);
 
-   r = a * c;
+   auto r = a * c;
    updateFpscr(state);
    updateFprf(state, r);
-   setFpr<Type>(state, instr.frD, r);
+   fpr(instr.frD) = r;
 
    if (instr.rc) {
       updateCr1(state);
@@ -697,22 +460,22 @@ bool fmulx(State *state, Instruction instr)
    return true;
 }
 
-/* fmul, fmul. */
+/* Floating Multiply */
 bool fmul(State *state, Instruction instr)
 {
    return fmulx<double>(state, instr);
 }
 
-/* fmuls, fmuls. */
+/* Floating Multiply Single */
 bool fmuls(State *state, Instruction instr)
 {
    return fmulx<float>(state, instr);
 }
 
-/* fnabs, fnabs. */
+/* Floating Negative Absolute Value */
 bool fnabs(State *state, Instruction instr)
 {
-   fpr(instr.frD) = -std::fabs(fpr(instr.frB));
+   fpr(instr.frD) = fpu::makeNegative(std::fabs(fpr(instr.frB)));
 
    if (instr.rc) {
       updateCr1(state);
@@ -721,11 +484,10 @@ bool fnabs(State *state, Instruction instr)
    return true;
 }
 
-/* fneg, fneg. */
+/* Floating Negate */
 bool fneg(State *state, Instruction instr)
 {
-   fpr(instr.frD) = fpr(instr.frB);
-   *reinterpret_cast<uint64_t*>(&fpr(instr.frD)) ^= 1ull << 63;
+   fpr(instr.frD) = fpu::makeNegative(fpr(instr.frB));
 
    if (instr.rc) {
       updateCr1(state);
@@ -734,23 +496,22 @@ bool fneg(State *state, Instruction instr)
    return true;
 }
 
-/* fnmadd, fnmadd., fnmadds, fnmadds. */
+/* Floating Negative Multiply-Add x */
 template<typename Type>
 bool fnmaddx(State *state, Instruction instr)
 {
-   Type a = getFpr<Type>(state, instr.frA);
-   Type b = getFpr<Type>(state, instr.frB);
-   Type c = getFpr<Type>(state, instr.frC);
-   Type r;
+   auto a = fpr(instr.frA);
+   auto b = fpr(instr.frB);
+   auto c = fpr(instr.frC);
 
-   state->reg.fpscr.vximz  |= isInfinity(a) && isZero(c);
-   state->reg.fpscr.vxsnan |= isSignallingNaN(a) || isSignallingNaN(b) || isSignallingNaN(c);
-   state->reg.fpscr.vxisi  |= (isInfinity(a) || isInfinity(c)) && isInfinity(b);
+   state->reg.fpscr.vximz  |= fpu::isInfinity(a) && fpu::isZero(c);
+   state->reg.fpscr.vxsnan |= fpu::isSignalingNaN(a) || fpu::isSignalingNaN(b) || fpu::isSignalingNaN(c);
+   state->reg.fpscr.vxisi  |= (fpu::isInfinity(a) || fpu::isInfinity(c)) && fpu::isInfinity(b);
 
-   r = -((a * c) + b);
+   auto r = -((a * c) + b);
    updateFpscr(state);
    updateFprf(state, r);
-   setFpr<Type>(state, instr.frD, r);
+   fpr(instr.frD) = r;
 
    if (instr.rc) {
       updateCr1(state);
@@ -760,34 +521,34 @@ bool fnmaddx(State *state, Instruction instr)
 }
 
 
-/* fnmadd, fnmadd. */
+/* Floating Negative Multiply-Add */
 bool fnmadd(State *state, Instruction instr)
 {
    return fnmaddx<double>(state, instr);
 }
 
-/* fnmadds, fnmadds. */
+/* Floating Negative Multiply-Add Single */
 bool fnmadds(State *state, Instruction instr)
 {
    return fnmaddx<float>(state, instr);
 }
 
-/* fnmsub, fnmsub., fnmsubs, fnmsubs. */
+/* Floating Negative Multiply-Subtract x */
 template<typename Type>
 bool fnmsubx(State *state, Instruction instr)
 {
-   Type a = getFpr<Type>(state, instr.frA);
-   Type b = getFpr<Type>(state, instr.frB);
-   Type c = getFpr<Type>(state, instr.frC);
+   auto a = fpr(instr.frA);
+   auto b = fpr(instr.frB);
+   auto c = fpr(instr.frC);
 
-   state->reg.fpscr.vximz  |= isInfinity(a) && isZero(c);
-   state->reg.fpscr.vxsnan |= isSignallingNaN(a) || isSignallingNaN(b) || isSignallingNaN(c);
-   state->reg.fpscr.vxisi  |= (isInfinity(a) || isInfinity(c)) && isInfinity(b);
+   state->reg.fpscr.vximz  |= fpu::isInfinity(a) && fpu::isZero(c);
+   state->reg.fpscr.vxsnan |= fpu::isSignalingNaN(a) || fpu::isSignalingNaN(b) || fpu::isSignalingNaN(c);
+   state->reg.fpscr.vxisi  |= (fpu::isInfinity(a) || fpu::isInfinity(c)) && fpu::isInfinity(b);
 
-   Type r = -((a * c) - b);
+   auto r = -((a * c) - b);
    updateFpscr(state);
    updateFprf(state, r);
-   setFpr<Type>(state, instr.frD, r);
+   fpr(instr.frD) = r;
 
    if (instr.rc) {
       updateCr1(state);
@@ -796,29 +557,29 @@ bool fnmsubx(State *state, Instruction instr)
    return true;
 }
 
-/* fnmsub, fnmsub. */
+/* Floating Negative Multiply-Subtract */
 bool fnmsub(State *state, Instruction instr)
 {
    return fnmsubx<double>(state, instr);
 }
 
-/* fnmsubs, fnmsubs. */
+/* Floating Negative Multiply-Subtract Single */
 bool fnmsubs(State *state, Instruction instr)
 {
    return fnmsubx<float>(state, instr);
 }
 
-/* fres, fres. */
+/* Floating Reciprocal Estimate Single */
 bool fres(State *state, Instruction instr)
 {
-   state->reg.fpscr.vxsnan |= isSignallingNaN(fpr(instr.frB));
+   auto b = fpr(instr.frB);
 
-   float b = getFpr<float>(state, instr.frB);
-   float r = 1.0f / b;
+   state->reg.fpscr.vxsnan |= fpu::isSignalingNaN(b);
 
+   auto r = 1.0f / b;
    updateFpscr(state);
    updateFprf(state, r);
-   setFpr<float>(state, instr.frD, r);
+   fpr(instr.frD) = r;
 
    if (instr.rc) {
       updateCr1(state);
@@ -827,17 +588,18 @@ bool fres(State *state, Instruction instr)
    return true;
 }
 
-/* frsp, frsp. */
+/* Floating Round to Single */
 bool frsp(State *state, Instruction instr)
 {
-   state->reg.fpscr.vxsnan |= isSignallingNaN(fpr(instr.frB));
+   auto b = fpr(instr.frB);
+
+   state->reg.fpscr.vxsnan |= fpu::isSignalingNaN(b);
 
    /* TODO: use rounding mode in FPSCR[RN] */
-   float r = static_cast<float>(fpr(instr.frB));
-
+   auto r = static_cast<double>(static_cast<float>(b));
    updateFpscr(state);
    updateFprf(state, r);
-   setFpr<float>(state, instr.frD, r);
+   fpr(instr.frD) = r;
 
    if (instr.rc) {
       updateCr1(state);
@@ -846,23 +608,23 @@ bool frsp(State *state, Instruction instr)
    return true;
 }
 
-/* frsqrte, frsqrte. */
+/* Floating Reciprocal Square Root Estimate */
 bool frsqrte(State *state, Instruction instr)
 {
    double b = fpr(instr.frB);
    double r;
 
-   state->reg.fpscr.vxsnan |= isSignallingNaN(b);
-   state->reg.fpscr.vxsqrt |= isNegativeInfinity(b) | isSignallingNaN(b) | isNegative(b);
+   state->reg.fpscr.vxsnan |= fpu::isSignalingNaN(b);
+   state->reg.fpscr.vxsqrt |= fpu::isNegativeInfinity(b) | fpu::isSignalingNaN(b) | fpu::isNegative(b);
 
-   if (isNegativeZero(b)) {
-      r = getNegativeInfinity<double>();
-   } if (isPositiveZero(b)) {
-      r = getPositiveInfinity<double>();
-   } else if (isPositiveInfinity(b)) {
-      r = 0.0;
-   } else if (isNegativeInfinity(b) || isSignallingNaN(b) || isQuietNaN(b) || isNegative(b)) {
-      r = getQuietNaN<double>();
+   if (fpu::isNegativeZero(b)) {
+      r = fpu::negativeInfinity();
+   } if (fpu::isPositiveZero(b)) {
+      r = fpu::positiveInfinity();
+   } else if (fpu::isPositiveInfinity(b)) {
+      r = fpu::positiveZero();
+   } else if (fpu::isNegativeInfinity(b) || fpu::isSignalingNaN(b) || fpu::isQuietNaN(b) || fpu::isNegative(b)) {
+      r = fpu::quietNaN();
    } else {
       /* TODO: frsqrte as estimate, not exact */
       r = 1.0 / std::sqrt(b);
@@ -870,7 +632,7 @@ bool frsqrte(State *state, Instruction instr)
 
    updateFpscr(state);
    updateFprf(state, r);
-   setFpr<double>(state, instr.frD, r);
+   fpr(instr.frD) = r;
 
    if (instr.rc) {
       updateCr1(state);
@@ -879,7 +641,7 @@ bool frsqrte(State *state, Instruction instr)
    return true;
 }
 
-/* fsel, fsel. */
+/* Floating Select */
 bool fsel(State *state, Instruction instr)
 {
    fpr(instr.frD) = fpr(instr.frA) > 0.0 ? fpr(instr.frC) : fpr(instr.frB);
@@ -891,29 +653,29 @@ bool fsel(State *state, Instruction instr)
    return true;
 }
 
-/* fsqrt, fsqrt. */
+/* Floating Square Root x */
 template<typename Type>
 bool fsqrtx(State *state, Instruction instr)
 {
-   Type b = getFpr<Type>(state, instr.frB);
-   Type r;
+   double b = fpr(instr.frB);
+   double r;
 
-   state->reg.fpscr.vxsnan |= isSignallingNaN(b);
-   state->reg.fpscr.vxsqrt |= isNegativeInfinity(b) | isSignallingNaN(b) | isNegative(b);
+   state->reg.fpscr.vxsnan |= fpu::isSignalingNaN(b);
+   state->reg.fpscr.vxsqrt |= fpu::isNegativeInfinity(b) | fpu::isSignalingNaN(b) | fpu::isNegative(b);
 
-   if (isNegativeZero(b)) {
-      r = getNegativeZero<Type>();
-   } else if (isPositiveInfinity(b)) {
-      r = getPositiveInfinity<Type>();
-   } else if (isNegativeInfinity(b) || isSignallingNaN(b) || isQuietNaN(b) || isNegative(b)) {
-      r = getQuietNaN<Type>();
+   if (fpu::isNegativeZero(b)) {
+      r = fpu::negativeZero();
+   } else if (fpu::isPositiveInfinity(b)) {
+      r = fpu::positiveInfinity();
+   } else if (fpu::isNegativeInfinity(b) || fpu::isSignalingNaN(b) || fpu::isQuietNaN(b) || fpu::isNegative(b)) {
+      r = fpu::quietNaN();
    } else {
       r = std::sqrt(b);
    }
 
    updateFpscr(state);
    updateFprf(state, fpr(instr.frD));
-   setFpr<Type>(state, instr.frD, r);
+   fpr(instr.frD) = r;
 
    if (instr.rc) {
       updateCr1(state);
@@ -922,33 +684,32 @@ bool fsqrtx(State *state, Instruction instr)
    return true;
 }
 
-/* fsqrt, fsqrt. */
+/* Floating Square Root */
 bool fsqrt(State *state, Instruction instr)
 {
    return fsqrtx<double>(state, instr);
 }
 
-/* fsqrts, fsqrts. */
+/* Floating Square Root Single */
 bool fsqrts(State *state, Instruction instr)
 {
    return fsqrtx<float>(state, instr);
 }
 
-/* fsub, fsub., fsubs, fsubs. */
+/* Floating Subtracet x */
 template<typename Type>
 bool fsubx(State *state, Instruction instr)
 {
-   Type a = getFpr<Type>(state, instr.frA);
-   Type b = getFpr<Type>(state, instr.frB);
-   Type r;
+   auto a = fpr(instr.frA);
+   auto b = fpr(instr.frB);
 
-   state->reg.fpscr.vxsnan |= isSignallingNaN(a) || isSignallingNaN(b);
-   state->reg.fpscr.vxisi  |= isInfinity(a) && isInfinity(b);
+   state->reg.fpscr.vxsnan |= fpu::isSignalingNaN(a) || fpu::isSignalingNaN(b);
+   state->reg.fpscr.vxisi  |= fpu::isInfinity(a) && fpu::isInfinity(b);
 
-   r = a - b;
+   auto r = a - b;
    updateFpscr(state);
    updateFprf(state, fpr(instr.frD));
-   setFpr<Type>(state, instr.frD, r);
+   fpr(instr.frD) = r;
 
    if (instr.rc) {
       updateCr1(state);
@@ -957,16 +718,137 @@ bool fsubx(State *state, Instruction instr)
    return true;
 }
 
-/* fsub, fsub. */
+/* Floating Subtracet */
 bool fsub(State *state, Instruction instr)
 {
    return fsubx<double>(state, instr);
 }
 
-/* fsubs, fsubs. */
+/* Floating Subtracet Single */
 bool fsubs(State *state, Instruction instr)
 {
    return fsubx<float>(state, instr);
+}
+
+/* Move to Condition Register from FPSCR */
+bool mcrfs(State *state, Instruction instr)
+{
+   crn(instr.crfD) = fpscr(instr.crfS);
+
+   switch (instr.crfS) {
+   case 0:
+      state->reg.fpscr.fx = 0;
+      state->reg.fpscr.ox = 0;
+      break;
+   case 1:
+      state->reg.fpscr.ux = 0;
+      state->reg.fpscr.zx = 0;
+      state->reg.fpscr.xx = 0;
+      state->reg.fpscr.vxsnan = 0;
+      break;
+   case 2:
+      state->reg.fpscr.vxisi = 0;
+      state->reg.fpscr.vxidi = 0;
+      state->reg.fpscr.vxzdz = 0;
+      state->reg.fpscr.vximz = 0;
+      break;
+   case 3:
+      state->reg.fpscr.vxvc = 0;
+      break;
+   case 5:
+      state->reg.fpscr.vxsoft = 0;
+      state->reg.fpscr.vxsqrt = 0;
+      state->reg.fpscr.vxcvi = 0;
+      break;
+   }
+
+   return true;
+}
+
+/* Move from FPSCR */
+bool mffs(State *state, Instruction instr)
+{
+   reinterpret<uint64_t>(fpr(instr.frB)) = state->reg.fpscr.value;
+
+   if (instr.rc) {
+      updateCr1(state);
+   }
+
+   return true;
+}
+
+/* Move to FPSCR Bit 0 */
+bool mtfsb0(State *state, Instruction instr)
+{
+   state->reg.fpscr.value = bits::clear(state->reg.fpscr.value, instr.crbD);
+
+   if (instr.rc) {
+      updateCr1(state);
+   }
+
+   return true;
+}
+
+/* Move to FPSCR Bit 1 */
+bool mtfsb1(State *state, Instruction instr)
+{
+   state->reg.fpscr.value = bits::set(state->reg.fpscr.value, instr.crbD);
+
+   if (instr.rc) {
+      updateCr1(state);
+   }
+
+   return true;
+}
+
+/* Move to FPSCR Fields */
+bool mtfsf(State *state, Instruction instr)
+{
+   uint32_t mask = 0;
+
+   for (int i = 0; i < 8; ++i) {
+      if (instr.fm & (1 << i)) {
+         if (i == 0) {
+            mask |= 0x9;
+         } else {
+            mask |= 0xf << i;
+         }
+      }
+   }
+
+   state->reg.fpscr.value &= ~mask;
+   state->reg.fpscr.value |= reinterpret<uint32_t>(fpr(instr.frB)) & mask;
+
+   if (instr.fm & 1) {
+      updateFexVx(state);
+   } else {
+      updateVx(state);
+   }
+
+   if (instr.rc) {
+      updateCr1(state);
+   }
+
+   return true;
+}
+
+/* Move to FPSCR Field Immediate */
+bool mtfsfi(State *state, Instruction instr)
+{
+
+   if (instr.crfD == 0) {
+      fpscr(instr.crfD) = instr.imm & 0x9;
+   } else {
+      fpscr(instr.crfD) = instr.imm;
+   }
+
+   updateFexVx(state);
+
+   if (instr.rc) {
+      updateCr1(state);
+   }
+
+   return true;
 }
 
 } // namespace Interpreter

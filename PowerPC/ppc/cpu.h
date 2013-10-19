@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+/* Registers are in Little Endian, Memory is in Big Endian */
+
 namespace ppc
 {
 
@@ -43,91 +45,107 @@ union Fpscr
    0  0  1  0  1  +Infinity
    */
 
-   enum FloatingPointResultFlags {
-      Unordered         = 1 << 4, // ?
-      Equal             = 1 << 3, // =
-      Positive          = 1 << 2, // >
-      Negative          = 1 << 1, // <
+   enum FloatingPointResultFlags
+   {
       ClassDescriptor   = 1 << 0, // C
+      Negative          = 1 << 1, // <
+      Positive          = 1 << 2, // >
+      Equal             = 1 << 3, // =
+      Unordered         = 1 << 4, // ?
    };
 
    uint32_t value;
 
-   struct {
-      uint32_t : 28;
+   struct
+   {
       uint32_t cr1 : 4;
+      uint32_t : 28;
    };
 
-   struct {
-      uint32_t rn : 2;        /* 00 nearest, 01 zero, 10 +inf, 11 -inf */
-      uint32_t ni : 1;        /* Non-IEEE mode */
-      uint32_t xe : 1;        /* Enable FP Exception: Inexact */
-      uint32_t ze : 1;        /* Enable FP Exception: Zero Divide */
-      uint32_t ue : 1;        /* Enable FP Exception: Underflow */
-      uint32_t oe : 1;        /* Enable FP Exception: Overflow */
-      uint32_t ve : 1;        /* Enable FP Exception: Invalid Operation */
-      uint32_t vxcvi : 1;     /* Enable FP Exception: Invalid Operation for Integer Convert */
-      uint32_t vxsqrt : 1;    /* Enable FP Exception: Invalid Operation for Square Root */
-      uint32_t vxsoft : 1;    /* Enable FP Exception: Invalid Operation for Software Request */
-      uint32_t _reserved : 1;
-      uint32_t fprf : 5;      /* Floating-Point result flags */
-      uint32_t fi : 1;        /* FP State: Inexact Fraction */
-      uint32_t fr : 1;        /* FP State: Fraction Rounded */
-      uint32_t vxvc : 1;      /* FP Exception: Invalid Operation for Compare */
-      uint32_t vximz : 1;     /* FP Exception: Invalid Operation for [Inf * Zero] */
-      uint32_t vxzdz : 1;     /* FP Exception: Invalid Operation for [Zero / Zero] */
-      uint32_t vxidi : 1;     /* FP Exception: Invalid Operation for [Inf / Inf] */
-      uint32_t vxisi : 1;     /* FP Exception: Invalid Operation for [Inf - Inf] */
-      uint32_t vxsnan : 1;    /* FP Exception: Invalid Operation for SNaN */
-      uint32_t xx : 1;        /* FP Exception: Inexact */
-      uint32_t zx : 1;        /* FP Exception: Zero Divide */
-      uint32_t ux : 1;        /* FP Exception: Underflow */
-      uint32_t ox : 1;        /* FP Exception: Overflow */
-      uint32_t vx : 1;        /* FP Exception: Invalid Operation */
-      uint32_t fex : 1;       /* FP Exception: Any enabled FP Exception has happened */
+   struct
+   {
       uint32_t fx : 1;        /* FP Exception: Any FP Exception has happened */
+      uint32_t fex : 1;       /* FP Exception: Any enabled FP Exception has happened */
+      uint32_t vx : 1;        /* FP Exception: Invalid Operation */
+      uint32_t ox : 1;        /* FP Exception: Overflow */
+      uint32_t ux : 1;        /* FP Exception: Underflow */
+      uint32_t zx : 1;        /* FP Exception: Zero Divide */
+      uint32_t xx : 1;        /* FP Exception: Inexact */
+      uint32_t vxsnan : 1;    /* FP Exception: Invalid Operation for SNaN */
+      uint32_t vxisi : 1;     /* FP Exception: Invalid Operation for [Inf - Inf] */
+      uint32_t vxidi : 1;     /* FP Exception: Invalid Operation for [Inf / Inf] */
+      uint32_t vxzdz : 1;     /* FP Exception: Invalid Operation for [Zero / Zero] */
+      uint32_t vximz : 1;     /* FP Exception: Invalid Operation for [Inf * Zero] */
+      uint32_t vxvc : 1;      /* FP Exception: Invalid Operation for Compare */
+      uint32_t fr : 1;        /* FP State: Fraction Rounded */
+      uint32_t fi : 1;        /* FP State: Inexact Fraction */
+      uint32_t fprf : 5;      /* Floating-Point result flags */
+      uint32_t _reserved : 1;
+      uint32_t vxsoft : 1;    /* Enable FP Exception: Invalid Operation for Software Request */
+      uint32_t vxsqrt : 1;    /* Enable FP Exception: Invalid Operation for Square Root */
+      uint32_t vxcvi : 1;     /* Enable FP Exception: Invalid Operation for Integer Convert */
+      uint32_t ve : 1;        /* Enable FP Exception: Invalid Operation */
+      uint32_t oe : 1;        /* Enable FP Exception: Overflow */
+      uint32_t ue : 1;        /* Enable FP Exception: Underflow */
+      uint32_t ze : 1;        /* Enable FP Exception: Zero Divide */
+      uint32_t xe : 1;        /* Enable FP Exception: Inexact */
+      uint32_t ni : 1;        /* Non-IEEE mode */
+      uint32_t rn : 2;        /* 00 nearest, 01 zero, 10 +inf, 11 -inf */
    };
 };
 
-union Cr {
-   enum Cr0Flags {
-      SummaryOverflow   = 1 << 0,
-      Zero              = 1 << 1,
-      Positive          = 1 << 2,
-      Negative          = 1 << 3,
+union Cr
+{
+   enum Cr0Flags
+   {
+      Negative = 1 << 0,
+      Positive = 1 << 1,
+      Zero = 1 << 2,
+      SummaryOverflow = 1 << 3,
    };
 
-   enum Cr1Flags {
-      FloatingPointException        = 1 << 0,
+   enum Cr1Flags
+   {
+      FloatingPointException = 1 << 0,
       FloatingPointEnabledException = 1 << 1,
       FloatingPointInvalidOperation = 1 << 2,
-      FloatingPointOverflow         = 1 << 3,
+      FloatingPointOverflow = 1 << 3,
+   };
+
+   enum CrNFlags
+   {
+      Less = 1 << 0,
+      Greater = 1 << 1,
+      Equal = 1 << 2,
+      Unordered = 1 << 3,
    };
 
    uint32_t value;
 
-   struct {
-      uint32_t cr7 : 4;
-      uint32_t cr6 : 4;
-      uint32_t cr5 : 4;
-      uint32_t cr4 : 4;
-      uint32_t cr3 : 4;
-      uint32_t cr2 : 4;
-      uint32_t cr1 : 4;
+   struct
+   {
       uint32_t cr0 : 4;
+      uint32_t cr1 : 4;
+      uint32_t cr2 : 4;
+      uint32_t cr3 : 4;
+      uint32_t cr4 : 4;
+      uint32_t cr5 : 4;
+      uint32_t cr6 : 4;
+      uint32_t cr7 : 4;
    };
 };
 
-union Xer {
+union Xer
+{
    uint64_t value;
 
    struct {
-      uint64_t byteCount : 7;
-      uint64_t : 22;
-      uint64_t ca : 1;
-      uint64_t ov : 1;
-      uint64_t so : 1; /* Set when OV is set (not including mtspr), remains until cleared by mtspr or mcrxr */
       uint64_t : 32;
+      uint64_t so : 1; /* Sticky OV, remains until cleared by mtspr or mcrxr */
+      uint64_t ov : 1;
+      uint64_t ca : 1;
+      uint64_t : 22;
+      uint64_t byteCount : 7;
    };
 };
 
@@ -354,20 +372,8 @@ struct Registers
       }
    }
 };
-   
 
-/*
-Instruction Groups:
-
-Integer
-Floating-Point
-Load/Store
-Synchronization
-Flow-Control
-Processor Control (mtspr, mfspr)
-Memory/Cache Control
-External Control (eciwx, ecowx)
-*/
+/* Instructions are loaded from memory and thus are in Big Endian format*/
 struct Instruction
 {
    Instruction(){}
@@ -397,6 +403,13 @@ struct Instruction
          uint32_t : 11;
          uint32_t spr : 10;
          uint32_t : 11;
+      };
+
+      struct
+      {
+         uint32_t: 11;
+         uint32_t tbr : 10;
+         uint32_t: 11;
       };
 
       struct {
@@ -429,6 +442,13 @@ struct Instruction
          uint32_t : 16;
       };
 
+      struct
+      {
+         uint32_t : 12;
+         uint32_t imm : 4;
+         uint32_t : 16;
+      };
+
       struct {
          uint32_t : 11;
          uint32_t bh : 2;
@@ -445,10 +465,11 @@ struct Instruction
       };
 
       struct {
-         uint32_t : 21;
+         uint32_t: 18;
+         uint32_t crfS : 3;
          uint32_t l : 1;
          uint32_t : 1;
-         uint32_t crfd : 3;
+         uint32_t crfD : 3;
          uint32_t : 6;
       };
 
@@ -480,6 +501,34 @@ struct Instruction
          uint32_t : 21;
          uint32_t frS : 5;
          uint32_t : 6;
+      };
+
+      struct
+      {
+         uint32_t : 12;
+         uint32_t crm : 8;
+         uint32_t : 12;
+      };
+
+      struct
+      {
+         uint32_t : 16;
+         uint32_t sr : 4;
+         uint32_t : 12;
+      };
+
+      struct
+      {
+         uint32_t: 17;
+         uint32_t fm : 8;
+         uint32_t: 7;
+      };
+
+      struct
+      {
+         uint32_t : 16;
+         uint32_t l15 : 1;
+         uint32_t : 15;
       };
    };
 };

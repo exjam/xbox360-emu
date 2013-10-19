@@ -316,7 +316,7 @@ bool b(State *state, Instruction instr)
    state->result.code = lkaa("b", instr.lk, instr.aa);
    state->result.name = "Branch";
    state->result.operands
-      << addr((instr.aa ? 0 : state->cia) + bits::signExtend<26>(instr.li << 2));
+      << addr((instr.aa ? 0 : state->cia) + bits::signExtend<26>(static_cast<uint64_t>(instr.li) << 2));
 
    return true;
 }
@@ -329,7 +329,7 @@ bool bc(State *state, Instruction instr)
    state->result.operands
       << uimm(instr.bo) //TODO: bo
       << uimm(instr.bi) //TODO: bi
-      << addr((instr.aa ? 0 : state->cia) + bits::signExtend<16>(instr.bd << 2));
+      << addr((instr.aa ? 0 : state->cia) + bits::signExtend<16>(static_cast<uint64_t>(instr.bd) << 2));
 
    return true;
 }
@@ -366,7 +366,7 @@ bool cmp(State *state, Instruction instr)
    state->result.code = instr.l ? "cmpw" : "cmpd";
    state->result.name = "Compare";
    state->result.operands
-      << crfd(instr.crfd, Operand::Write)
+      << crfd(instr.crfD, Operand::Write)
       << gpr(instr.rA)
       << gpr(instr.rB);
 
@@ -379,7 +379,7 @@ bool cmpi(State *state, Instruction instr)
    state->result.code = instr.l ? "cmpwi" : "cmpdi";
    state->result.name = "Compare Immediate";
    state->result.operands
-      << crfd(instr.crfd, Operand::Write)
+      << crfd(instr.crfD, Operand::Write)
       << gpr(instr.rA)
       << simm(instr.simm);
 
@@ -392,7 +392,7 @@ bool cmpl(State *state, Instruction instr)
    state->result.code = instr.l ? "cmplw" : "cmpld";
    state->result.name = "Compare Logical";
    state->result.operands
-      << crfd(instr.crfd, Operand::Write)
+      << crfd(instr.crfD, Operand::Write)
       << gpr(instr.rA)
       << gpr(instr.rB);
 
@@ -405,7 +405,7 @@ bool cmpli(State *state, Instruction instr)
    state->result.code = instr.l ? "cmplwi" : "cmpldi";
    state->result.name = "Compare Logical Immediate";
    state->result.operands
-      << crfd(instr.crfd, Operand::Write)
+      << crfd(instr.crfD, Operand::Write)
       << gpr(instr.rA)
       << uimm(instr.uimm);
 
@@ -803,7 +803,7 @@ bool std(State *state, Instruction instr)
    state->result.name = "Store Double Word";
    state->result.operands
       << gpr(instr.rS)
-      << gpr_ofs(instr.rA, bits::signExtend<16>(instr.ds << 2), Operand::Read);
+      << gpr_ofs(instr.rA, bits::signExtend<16>(static_cast<uint64_t>(instr.ds) << 2), Operand::Read);
 
    return true;
 }
@@ -815,7 +815,7 @@ bool stdu(State *state, Instruction instr)
    state->result.name = "Store Double Word with Update";
    state->result.operands
       << gpr(instr.rS)
-      << gpr_ofs(instr.rA, bits::signExtend<16>(instr.ds << 2), Operand::ReadWrite);
+      << gpr_ofs(instr.rA, bits::signExtend<16>(static_cast<uint64_t>(instr.ds) << 2), Operand::ReadWrite);
    
    return true;
 }
