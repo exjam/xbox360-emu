@@ -1,7 +1,10 @@
 #ifndef PPC_CPU_H
 #define PPC_CPU_H
 
+#include "util/flags.h"
+
 #include <stdint.h>
+#include <vector>
 
 /* Registers are in Little Endian, Memory is in Big Endian */
 
@@ -14,22 +17,27 @@ typedef int64_t sreg_t;
 typedef double freg_t;
 
 enum class Exceptions {
-   SystemReset        = 0x100,
-   MachineCheck       = 0x200,
-   DSI                = 0x300,
-   DataSegment        = 0x380,
-   ISI                = 0x400,
-   InstructionSegment = 0x480,
-   ExternalInterrupt  = 0x500,
-   Alignment          = 0x600,
-   Program            = 0x700,
-   FpuUnavailable     = 0x800,
-   Decrementer        = 0x900,
-   SystemCall         = 0xC00,
-   Trace              = 0xD00,
-   PerformanceMonitor = 0xF00,
+   SystemReset                  = 0x100,
+   MachineCheck                 = 0x200,
+   DSI                          = 0x300, /* Data Storage Interrupt */
+   DataSegment                  = 0x380,
+   ISI                          = 0x400, /* Instruction Storage Interrupt */
+   InstructionSegment           = 0x480,
+   ExternalInterrupt            = 0x500,
+   Alignment                    = 0x600,
+   Program                      = 0x700,
+   ProgramFloatingPointEnabled  = 0x701,
+   ProgramIllegalInstruction    = 0x702,
+   ProgramPrivilegedInstruction = 0x704,
+   ProgramTrap                  = 0x708,
+   FpuUnavailable               = 0x800,
+   Decrementer                  = 0x900,
+   SystemCall                   = 0xC00,
+   Trace                        = 0xD00,
+   PerformanceMonitor           = 0xF00,
 };
 
+/* Floating-point Status and Control Register */
 union Fpscr
 {
    /* Floating-Point result flags
@@ -94,29 +102,30 @@ union Fpscr
    };
 };
 
+/* Condition Register */
 union Cr
 {
    enum Cr0Flags
    {
-      Negative = 1 << 0,
-      Positive = 1 << 1,
-      Zero = 1 << 2,
+      Negative        = 1 << 0,
+      Positive        = 1 << 1,
+      Zero            = 1 << 2,
       SummaryOverflow = 1 << 3,
    };
 
    enum Cr1Flags
    {
-      FloatingPointException = 1 << 0,
+      FloatingPointException        = 1 << 0,
       FloatingPointEnabledException = 1 << 1,
       FloatingPointInvalidOperation = 1 << 2,
-      FloatingPointOverflow = 1 << 3,
+      FloatingPointOverflow         = 1 << 3,
    };
 
    enum CrNFlags
    {
-      Less = 1 << 0,
-      Greater = 1 << 1,
-      Equal = 1 << 2,
+      Less      = 1 << 0,
+      Greater   = 1 << 1,
+      Equal     = 1 << 2,
       Unordered = 1 << 3,
    };
 
@@ -135,18 +144,87 @@ union Cr
    };
 };
 
+/* XER Register */
 union Xer
 {
    uint64_t value;
 
    struct {
       uint64_t : 32;
-      uint64_t so : 1; /* Sticky OV, remains until cleared by mtspr or mcrxr */
-      uint64_t ov : 1;
-      uint64_t ca : 1;
+      uint64_t so : 1;        /* Sticky OV */
+      uint64_t ov : 1;        /* Overflow */
+      uint64_t ca : 1;        /* Carry */
       uint64_t : 22;
-      uint64_t byteCount : 7;
+      uint64_t byteCount : 7; /* For lmwx, stmwx */
    };
+};
+
+/* Machine State Register */
+union Msr
+{
+   uint64_t value;
+
+   struct
+   {
+      uint64_t sf : 1;  /* 64 bit mode */
+      uint64_t : 44;
+      uint64_t pow : 1; /* Power Management Enabled */
+      uint64_t : 1;
+      uint64_t ile : 1; /* Little Endian Mode, copied to le on interrupt */
+      uint64_t ee : 1;  /* External Interrupt Enabled */
+      uint64_t pr : 1;  /* Privilege Level */
+      uint64_t fp : 1;  /* Floating-point Available */
+      uint64_t me : 1;  /* Machine Check Enabled */
+      uint64_t fe0 : 1; /* Floating-point Exception Mode 0 */
+      uint64_t se : 1;  /* Single-step Trace Enabled */
+      uint64_t be : 1;  /* Branch Trace Enable */
+      uint64_t fe1 : 1; /* Floating-point Exception Mode 1 */
+      uint64_t : 2;
+      uint64_t ir : 1;  /* Instruction Address Translation Enabled */
+      uint64_t dr : 1;  /* Data Address Translation Enabled */
+      uint64_t : 1;
+      uint64_t pmm : 1; /* Performance Monitor Mark */
+      uint64_t ri : 1;  /* Recoverable Exception */
+      uint64_t le : 1;  /* Little Endian Mode */
+   };
+};
+
+/* Processor Version Register */
+union Pvr
+{
+   uint32_t value;
+
+   struct
+   {
+      uint32_t version : 16;
+      uint32_t revision : 16;
+   };
+};
+
+/* SDR1 Register */
+union SDR1
+{
+   uint64_t value;
+
+   struct
+   {
+      uint64_t htaborg : 46;
+      uint64_t : 13;
+      uint64_t htabsize : 5;
+   };
+};
+
+/* Segment Lookaside Buffer (7.4.2.1) */
+struct SlbEntry
+{
+   int valid : 1;      /* Entry Valid */
+   uint64_t esid : 36; /* Effective Segment ID */
+   uint64_t vsid : 52; /* Virtual Segment ID */
+   int Ks : 1;         /* Supervisor State Storage Key */
+   int Kp : 1;         /* User (Problem) State Storage Key */
+   int N : 1;          /* No Execute Segment */
+   int L : 1;          /* Large Virtual Pages */
+   int C : 1;          /* Class */
 };
 
 struct Registers
@@ -165,14 +243,16 @@ struct Registers
    uint32_t tbl;     /* Time Base Lower */
 
    /* Configuration Registers */
-   uint64_t msr;     /* Machine State Register */
+   Msr msr;          /* Machine State Register */
    uint32_t pvr;     /* Processor Version Register */
 
    /* Memory Management Registers */
    uint64_t sdr1;
    uint64_t asr;     /* Address Space Register */
+   std::vector<SlbEntry> slb; /* Segment Lookaside Buffer */
 
    /* Exception Handling Registers */
+   Flags<Exceptions> exception;
    uint64_t dar;     /* Data Address Register */
    uint32_t dsisr;
    uint64_t srr0;    /* Save and Restore Registers */
@@ -191,6 +271,10 @@ struct Registers
    uint64_t ctrl;    /* Control Register */
    uint64_t iabr;    /* Instruction Address Breakpoint Register */
 
+   /* Reserve load/store */
+   uint32_t reserve;
+   uint64_t reserveAddress;
+   
    /* ID mappings for spr */
    enum spr {   
       XER      = 1,
@@ -274,7 +358,7 @@ struct Registers
       case Registers::CR:
          return cr.value;
       case Registers::MSR:
-         return msr;
+         return msr.value;
       case Registers::PVR:
          return pvr;
       case Registers::PIR:
@@ -355,7 +439,7 @@ struct Registers
          cr.value = static_cast<uint32_t>(value);
          break;
       case Registers::MSR:
-         msr = value;
+         msr.value = value;
          break;
       case Registers::PVR:
          pvr = static_cast<uint32_t>(value);
@@ -474,6 +558,12 @@ struct Instruction
       };
 
       struct {
+         uint32_t : 21;
+         uint32_t syncl : 2;
+         uint32_t : 9;
+      };
+
+      struct {
          uint32_t  : 11;
          uint32_t crbB : 5;
          uint32_t crbA : 5;
@@ -529,6 +619,53 @@ struct Instruction
          uint32_t : 16;
          uint32_t l15 : 1;
          uint32_t : 15;
+      };
+
+      struct
+      {
+         uint32_t : 1;
+         uint32_t shd5 : 1;  /* shd[5] */
+         uint32_t : 3;
+         uint32_t mbd : 6;
+         uint32_t shd04 : 5; /* shd[0-4] */
+         uint32_t : 16;
+      };
+
+      struct
+      {
+         uint32_t : 5;
+         uint32_t med : 6;
+         uint32_t : 21;
+      };
+
+      struct
+      {
+         uint32_t: 1;
+         uint32_t me : 5;
+         uint32_t mb : 5;
+         uint32_t sh : 5;
+         uint32_t: 16;
+      };
+
+      struct
+      {
+         uint32_t : 21;
+         uint32_t to : 5;
+         uint32_t : 6;
+      };
+      
+      struct
+      {
+         uint32_t : 11;
+         uint32_t nb : 5;
+         uint32_t : 16;
+      };
+      
+      struct
+      {
+         uint32_t : 21;
+         uint32_t tlbl : 1;
+         uint32_t : 10;
       };
    };
 };

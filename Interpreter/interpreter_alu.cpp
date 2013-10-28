@@ -5,6 +5,8 @@
 #include "util/bits.h"
 #include "util/be/memory.h"
 
+#include "common.h"
+
 #include <limits>
 
 namespace ppc 
@@ -12,23 +14,6 @@ namespace ppc
 
 namespace Interpreter
 {
-
-#define UNIMPLEMENTED(insName) \
-   bool insName (State *state, Instruction) { \
-      xDebug() << "Unimplemented interpreter instruction "#insName ; \
-      return false; \
-   }
-
-#define gpr(instr) state->reg.gpr[instr]
-#define gprs(instr) reinterpret<int64_t>(state->reg.gpr[instr])
-#define gprw(instr) reinterpret<uint32_t>(state->reg.gpr[instr])
-#define gprsw(instr) reinterpret<int32_t>(state->reg.gpr[instr])
-
-template<typename DstType, typename SrcType>
-static inline DstType& reinterpret(SrcType& value)
-{
-   return *reinterpret_cast<DstType*>(&value);
-}
 
 template<typename Type>
 static inline void updateCr0(State *state, Type value)
@@ -41,6 +26,10 @@ static inline void updateCr0(State *state, Type value)
       flags |= ppc::Cr::Negative;
    } else {
       flags |= ppc::Cr::Positive;
+   }
+
+   if (state->reg.xer.so) {
+      flags |= ppc::Cr::SummaryOverflow;
    }
 
    state->reg.cr.cr0 = flags;
@@ -111,7 +100,7 @@ bool addx(State *state, Instruction instr)
    }
 
    if (Flags & AddCarry || Flags & AddExtend) {
-      state->reg.xer.ca = gpr(instr.rD) < gpr(instr.rA);
+      state->reg.xer.ca = gpr(instr.rD) < gpr(instr.rA) ? 1 : 0;
    }
 
    return true;
@@ -206,7 +195,7 @@ bool andio(State *state, Instruction instr)
 /* And Immediate Shifted */
 bool andiso(State *state, Instruction instr)
 {
-   gpr(instr.rA) = gpr(instr.rS) & (instr.uimm << 16);
+   gpr(instr.rA) = gpr(instr.rS) & (static_cast<uint64_t>(instr.uimm) << 16);
    updateCr0(state, gpr(instr.rA));
    return true;
 }
@@ -246,7 +235,7 @@ bool divxx(State *state, Instruction instr)
 
    bool overflow = b == 0;
 
-   if (std::numeric_limits<Type>::is_signed && ) {
+   if (std::numeric_limits<Type>::is_signed) {
       if (b == -1 && a == (static_cast<Type>(1) << (bits::count<Type>() - 1))) {
          overflow = true;
       }
@@ -259,6 +248,10 @@ bool divxx(State *state, Instruction instr)
       if (instr.rc) {
          updateCr0(state, r);
       }
+   }
+
+   if (instr.oe) {
+      updateXerOverflow(state, overflow);
    }
 
    return true;
@@ -360,9 +353,9 @@ bool mulhw(State *state, Instruction instr)
 {
    auto a = gprsw(instr.rA);
    auto b = gprsw(instr.rB);
-   auto r = (a * b) >> 32;
+   auto r = static_cast<int64_t>(a * b) >> 32;
 
-   gprsw(instr.rD) = r;
+   gprsw(instr.rD) = static_cast<int32_t>(r);
 
    if (instr.rc) {
       updateCr0(state, gprw(instr.rD));
@@ -376,9 +369,9 @@ bool mulhwu(State *state, Instruction instr)
 {
    auto a = gprw(instr.rA);
    auto b = gprw(instr.rB);
-   auto r = (a * b) >> 32;
+   auto r = static_cast<uint64_t>(a * b) >> 32;
 
-   gprw(instr.rD) = r;
+   gprw(instr.rD) = static_cast<uint32_t>(r);
 
    if (instr.rc) {
       updateCr0(state, gprw(instr.rD));
@@ -419,7 +412,7 @@ bool mulli(State *state, Instruction instr)
 }
 
 /* Multiply Low Word (signed) */
-bool mulld(State *state, Instruction instr)
+bool mullw(State *state, Instruction instr)
 {
    auto a = gprsw(instr.rA);
    auto b = gprsw(instr.rB);
@@ -451,7 +444,7 @@ bool nand(State *state, Instruction instr)
 }
 
 /* Negate */
-bool nand(State *state, Instruction instr)
+bool neg(State *state, Instruction instr)
 {
    if (gpr(instr.rA) == std::numeric_limits<int64_t>::max()) {
       gpr(instr.rD) = std::numeric_limits<int64_t>::min();
@@ -516,28 +509,264 @@ bool ori(State *state, Instruction instr)
 /* OR Immediate Shifted */
 bool oris(State *state, Instruction instr)
 {
-   gpr(instr.rA) = gpr(instr.rS) | (instr.uimm << 16);
+   gpr(instr.rA) = gpr(instr.rS) | (static_cast<uint64_t>(instr.uimm) << 16);
    return true;
 }
 
-UNIMPLEMENTED(rldcl);    /* Rotate Left Doubleword then Clear Left */
-UNIMPLEMENTED(rldcr);    /* Rotate Left Doubleword then Clear Right */
-UNIMPLEMENTED(rldc);     /* Rotate Left Doubleword Immediate then Clear */
-UNIMPLEMENTED(rldicl);   /* Rotate Left Doubleword Immediate then Clear Left */
-UNIMPLEMENTED(rldicr);   /* Rotate Left Doubleword Immediate then Clear Right */
-UNIMPLEMENTED(rldimi);   /* Rotate Left Doubleword Immediate then Mask Insert */
-UNIMPLEMENTED(rlwimi);   /* Rotate Left Word Immediate then Mask Insert */
-UNIMPLEMENTED(rlwinm);   /* Rotate Left Word Immediate then AND with Mask */
-UNIMPLEMENTED(rlwnm);    /* Rotate Left Word then AND with Mask */
+/* Rotate Left Doubleword x */
+enum RldxxFlags
+{
+   RldDefault        =      0,
+   RldClearLeft      = 1 << 0,
+   RldClear          = 1 << 1,
+   RldClearRight     = 1 << 2,
+   RldImmediate      = 1 << 3,
+   RldMaskInsert     = 1 << 4,
+};
 
-UNIMPLEMENTED(sld);      /* Shift Left Doubleword */
-UNIMPLEMENTED(slw);      /* Shift Left Word */
-UNIMPLEMENTED(srad);     /* Shift Right Algebraic Doubleword */
-UNIMPLEMENTED(sradi);    /* Shift Right Algebraic Doubleword Immediate */
-UNIMPLEMENTED(sraw);     /* Shift Right Algebraic Word */
-UNIMPLEMENTED(srawi);    /* Shift Right Algebraic Word Immediate */
-UNIMPLEMENTED(srd);      /* Shift Right Doubleword */
-UNIMPLEMENTED(srw);      /* Shift Right Word */
+template<int Flags>
+bool rldxx(State *state, Instruction instr)
+{
+   uint64_t r, m;
+   int32_t n;
+
+   if (Flags & RldImmediate) {
+      n = instr.shd04 | (instr.shd5 << 4);
+   } else {
+      n = gprw(instr.rB) & 0x3f;
+   }
+
+   r = _rotl64(gpr(instr.rS), n);
+
+   if (Flags & RldClearLeft) {
+      m = bits::mask<uint64_t>(63 - instr.mbd, 63 - 63);
+   } else if (Flags & RldClearRight) {
+      m = bits::mask<uint64_t>(63 - 0, 63 - instr.med);
+   } else if (Flags & RldClear) {
+      m = bits::mask<uint64_t>(63 - instr.mbd, n);
+   }
+
+   if (Flags & RldMaskInsert) {
+      gpr(instr.rA) = (r & m) | (gpr(instr.rA) & ~m);
+   } else {
+      gpr(instr.rA) = r & m;
+   }
+
+   if (instr.rc) {
+      updateCr0(state, gpr(instr.rA));
+   }
+
+   return true;
+}
+
+/* Rotate Left Doubleword then Clear Left */
+bool rldcl(State *state, Instruction instr)
+{
+   return rldxx<RldClearLeft>(state, instr);
+}
+
+/* Rotate Left Doubleword then Clear Right */
+bool rldcr(State *state, Instruction instr)
+{
+   return rldxx<RldClearRight>(state, instr);
+}
+
+/* Rotate Left Doubleword Immediate then Clear */
+bool rldic(State *state, Instruction instr)
+{
+   return rldxx<RldImmediate | RldClear>(state, instr);
+}
+
+/* Rotate Left Doubleword Immediate then Clear Left */
+bool rldicl(State *state, Instruction instr)
+{
+   return rldxx<RldImmediate | RldClearLeft>(state, instr);
+}
+
+/* Rotate Left Doubleword Immediate then Clear Right */
+bool rldicr(State *state, Instruction instr)
+{
+   return rldxx<RldImmediate | RldClearRight>(state, instr);
+}
+
+/* Rotate Left Doubleword Immediate then Mask Insert */
+bool rldimi(State *state, Instruction instr)
+{
+   return rldxx<RldImmediate | RldClear | RldMaskInsert>(state, instr);
+}
+
+/* Rotate Left Word x */
+enum RlwxxFlags
+{
+   RlwDefault    =      0,
+   RlwImmediate  = 1 << 0,
+   RlwMaskInsert = 1 << 1,
+};
+
+template<int Flags>
+bool rlwxx(State *state, Instruction instr)
+{
+   uint32_t n, r, m, a;
+
+   if (Flags & RlwImmediate) {
+      n = instr.sh;
+   } else {
+      n = gpr(instr.rB) & 0x1f;
+   }
+   
+   r = _rotl(gprw(instr.rS), n);
+
+   m = bits::mask<uint32_t>(31 - instr.mb, 31 - instr.me);
+
+   if (Flags & RlwMaskInsert) {
+      a = (r & m) | (r & ~m);
+   } else {
+      a = r & m;
+   }
+
+   gpr(instr.rA) = a;
+
+   if (instr.rc) {
+      updateCr0(state, a);
+   }
+
+   return true;
+}
+
+/* Rotate Left Word Immediate then Mask Insert */
+bool rlwimi(State *state, Instruction instr)
+{
+   return rlwxx<RlwImmediate | RlwMaskInsert>(state, instr);
+}
+
+/* Rotate Left Word Immediate then AND with Mask */
+bool rlwinm(State *state, Instruction instr)
+{
+   return rlwxx<RlwImmediate>(state, instr);
+}
+
+/* Rotate Left Word then AND with Mask */
+bool rlwnm(State *state, Instruction instr)
+{
+   return rlwxx<RlwDefault>(state, instr);
+}
+
+/* Shift x */
+enum
+{
+   ShiftDefault = 0,
+   ShiftLeft = 1 << 0,
+   ShiftRight = 1 << 1,
+   ShiftImmediate = 1 << 2,
+   ShiftAlgebraic = 1 << 3,
+};
+
+template<typename Type, int Flags>
+bool sxx(State *state, Instruction instr)
+{
+   Type a, n;
+
+   n = gpr(instr.rB) & (bits::count<Type>() - 1);
+
+   if (gpr(instr.rB) & bits::count<Type>()) {
+      a = 0;
+   } else if (Flags & ShiftRight) {
+      a = reinterpret<Type>(gpr(instr.rS)) >> n;
+   } else if (Flags & ShiftLeft) {
+      a = reinterpret<Type>(gpr(instr.rS)) << n;
+   }
+
+   gpr(instr.rA) = a;
+
+   if (instr.rc) {
+      updateCr0(state, a);
+   }
+
+   return true;
+}
+
+/* Shift Left Doubleword */
+bool sld(State *state, Instruction instr)
+{
+   return sxx<uint64_t, ShiftLeft>(state, instr);
+}
+
+/* Shift Left Word */
+bool slw(State *state, Instruction instr)
+{
+   return sxx<uint32_t, ShiftLeft>(state, instr);
+}
+
+/* Shift Right Doubleword */
+bool srd(State *state, Instruction instr)
+{
+   return sxx<uint64_t, ShiftRight>(state, instr);
+}
+
+/* Shift Right Word */
+bool srw(State *state, Instruction instr)
+{
+   return sxx<uint32_t, ShiftRight>(state, instr);
+}
+
+/* Shift Right Algebraic x */
+enum SraxFlags
+{
+   SraxDefault   =      0,
+   SraxImmediate = 1 << 0,
+};
+
+template<typename Type, int Flags>
+bool sraxx(State *state, Instruction instr)
+{
+   uint32_t n;
+   int msb = bits::count<Type>() - 1;
+   
+   if (Flags & SraxImmediate) {
+      if (bits::count<Type>() == 64) {
+         n = instr.shd04 | (instr.shd5 << 4);
+      } else {
+         n = instr.sh;
+      }
+   } else {
+      n = gpr(instr.rB) & msb;
+   }
+
+   gprs(instr.rA) = reinterpret<Type>(gpr(instr.rS)) >> n;
+
+   if (instr.rc) {
+      updateCr0(state, gpr(instr.rA));
+   }
+
+   state->reg.xer.ca = (bits::get(gpr(instr.rS), msb)
+                        && bits::get(gpr(instr.rA), msb)) ? 1 : 0;
+
+   return true;
+}
+
+/* Shift Right Algebraic Doubleword */
+bool srad(State *state, Instruction instr)
+{
+   return sraxx<int64_t, SraxDefault>(state, instr);
+}
+
+/* Shift Right Algebraic Doubleword Immediate */
+bool sradi(State *state, Instruction instr)
+{
+   return sraxx<int64_t, SraxImmediate>(state, instr);
+}
+
+/* Shift Right Algebraic Word */
+bool sraw(State *state, Instruction instr)
+{
+   return sraxx<int32_t, SraxDefault>(state, instr);
+}
+
+/* Shift Right Algebraic Word Immediate */
+bool srawi(State *state, Instruction instr)
+{
+   return sraxx<int64_t, SraxImmediate>(state, instr);
+}
 
 /* Subtract from x */
 enum SubfFlags
@@ -588,7 +817,7 @@ bool subfx(State *state, Instruction instr)
    }
    
    if (Flags & SubCarry || Flags & SubExtend) {
-      state->reg.xer.ca = gpr(instr.rD) < gpr(instr.rA);
+      state->reg.xer.ca = gpr(instr.rD) < gpr(instr.rA) ? 1 : 0;
    }
 
    return true;
@@ -652,7 +881,7 @@ bool xori(State *state, Instruction instr)
 /* XOR Immediate Shifted */
 bool xoris(State *state, Instruction instr)
 {
-   gpr(instr.rA) = gpr(instr.rS) ^ (instr.uimm << 16);
+   gpr(instr.rA) = gpr(instr.rS) ^ (static_cast<uint64_t>(instr.uimm) << 16);
    return true;
 }
 

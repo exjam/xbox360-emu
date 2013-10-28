@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <iostream>
 #include <iomanip>
+#include <string>
 
 class Log 
 {

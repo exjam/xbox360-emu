@@ -5,24 +5,15 @@
 #include "util/bits.h"
 #include "util/be/memory.h"
 
-#include <limits>
+#include "common.h"
 
-/* TODO: CRITICAL: Move ALL registers to little endian (cr, etc...) */
+#include <limits>
 
 namespace ppc 
 {
 
 namespace Interpreter
 {
-
-#define UNIMPLEMENTED(insName) \
-   bool insName (State *state, Instruction) { \
-      xDebug() << "Unimplemented interpreter instruction "#insName ; \
-      return false; \
-   }
-
-#define gpr(instr) state->reg.gpr[instr]
-#define crn(n) bits::field<uint32_t>(state->reg.cr.value, n * 4, n)
 
 /* Branch */
 bool b(State *state, Instruction instr)
@@ -259,8 +250,6 @@ bool crxor(State *state, Instruction instr)
    crn(instr.crbD) = a ^ b;
    return true;
 }
-
-UNIMPLEMENTED(sc);       /* System Call */
 
 } // namespace Interpreter
 

@@ -26,76 +26,81 @@ public:
       memset(reinterpret_cast<void*>(address), 0, size);
    }
 
+   static inline uint64_t translate(uint64_t address)
+   {
+      return address & 0xFFFFFFFF;
+   }
+
    template<typename T>
    static inline T read(uint64_t address)
    {
-      return *reinterpret_cast<T*>(address);
+      return *reinterpret_cast<T*>(translate(address));
    }
 
    template<>
    static inline uint16_t read(uint64_t address)
    {
-      return bits::swap(*reinterpret_cast<uint16_t*>(address));
+      return bits::swap(*reinterpret_cast<uint16_t*>(translate(address)));
    }
 
    template<>
    static inline uint32_t read(uint64_t address)
    {
-      return bits::swap(*reinterpret_cast<uint32_t*>(address));
+      return bits::swap(*reinterpret_cast<uint32_t*>(translate(address)));
    }
 
    template<>
    static inline uint64_t read(uint64_t address)
    {
-      return bits::swap(*reinterpret_cast<uint64_t*>(address));
+      return bits::swap(*reinterpret_cast<uint64_t*>(translate(address)));
    }
 
    template<>
    static inline float read(uint64_t address)
    {
-      return bits::swap(*reinterpret_cast<float*>(address));
+      return bits::swap(*reinterpret_cast<float*>(translate(address)));
    }
 
    template<>
    static inline double read(uint64_t address)
    {
-      return bits::swap(*reinterpret_cast<double*>(address));
+      return bits::swap(*reinterpret_cast<double*>(translate(address)));
    }
 
    template<typename T>
    static inline void write(uint64_t address, const T &value)
    {
-      *reinterpret_cast<T*>(address) = value;
+      *reinterpret_cast<T*>(translate(address)) = value;
    }
 
    template<>
    static inline void write(uint64_t address, const uint16_t &value)
    {
-      *reinterpret_cast<uint16_t*>(address) = bits::swap(value);
+      *reinterpret_cast<uint16_t*>(translate(address)) = bits::swap(value);
    }
 
    template<>
    static inline void write(uint64_t address, const uint32_t &value)
    {
-      *reinterpret_cast<uint32_t*>(address) = bits::swap(value);
+      *reinterpret_cast<uint32_t*>(translate(address)) = bits::swap(value);
    }
 
    template<>
    static inline void write(uint64_t address, const uint64_t &value)
    {
-      *reinterpret_cast<uint64_t*>(address) = bits::swap(value);
+      *reinterpret_cast<uint64_t*>(translate(address)) = bits::swap(value);
    }
 
    template<>
    static inline void write(uint64_t address, const float &value)
    {
-      *reinterpret_cast<float*>(address) = bits::swap(value);
+      *reinterpret_cast<float*>(translate(address)) = bits::swap(value);
    }
 
    template<>
    static inline void write(uint64_t address, const double &value)
    {
-      *reinterpret_cast<double*>(address) = bits::swap(value);
+      *reinterpret_cast<double*>(translate(address)) = bits::swap(value);
    }
 
 private:

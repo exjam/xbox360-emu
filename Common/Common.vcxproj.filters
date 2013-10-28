@@ -9,22 +9,37 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
     </Filter>
-    <Filter Include="Header Files\be">
+    <Filter Include="Header Files\util">
+      <UniqueIdentifier>{f9bbc249-39e3-48f5-97b1-d48affd52067}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\parser">
+      <UniqueIdentifier>{0550c772-ca32-49ed-bf44-17886a5d13cc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\util\be">
       <UniqueIdentifier>{2b96680f-5b2e-48e0-b681-39d8c0821d3a}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="util\bits.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="util\log.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="util\be\inputstream.h">
-      <Filter>Header Files\be</Filter>
+      <Filter>Header Files\util\be</Filter>
     </ClInclude>
     <ClInclude Include="util\be\memory.h">
-      <Filter>Header Files\be</Filter>
+      <Filter>Header Files\util\be</Filter>
+    </ClInclude>
+    <ClInclude Include="util\bits.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="util\log.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="parser\optional.h">
+      <Filter>Header Files\parser</Filter>
+    </ClInclude>
+    <ClInclude Include="parser\parser.h">
+      <Filter>Header Files\parser</Filter>
+    </ClInclude>
+    <ClInclude Include="util\flags.h">
+      <Filter>Header Files\util</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

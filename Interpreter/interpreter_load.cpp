@@ -5,6 +5,8 @@
 #include "util/bits.h"
 #include "util/be/memory.h"
 
+#include "common.h"
+
 #include <limits>
 
 namespace ppc 
@@ -12,23 +14,8 @@ namespace ppc
 
 namespace Interpreter
 {
-
-#define UNIMPLEMENTED(insName) \
-   bool insName (State *state, Instruction) { \
-      xDebug() << "Unimplemented interpreter instruction "#insName ; \
-      return false; \
-   }
-
-#define gpr(instr) state->reg.gpr[instr]
-#define gpr0(id) ((id == 0) ? 0 : state->reg.gpr[id])
-#define fpr(instr) state->reg.fpr[instr]
-
-template<typename DstType, typename SrcType>
-static inline DstType& reinterpret(SrcType& value)
-{
-   return *reinterpret_cast<DstType*>(&value);
-}
-
+   
+/* Load x */
 enum LoadFlags {
    LoadDefault    = 0,
    LoadIndexed    = 1 << 0,
@@ -36,21 +23,22 @@ enum LoadFlags {
    LoadDS         = 1 << 2,
    LoadZeroExtend = 1 << 3,
    LoadSignExtend = 1 << 4,
-   LoadFpu        = 1 << 5
+   LoadFpu        = 1 << 5,
+   LoadReversed   = 1 << 6,
 };
 
-/* Load x */
 template<typename SrcType, int Flags>
 bool lxx(State *state, Instruction instr)
 {
    ppc::reg_t ea;
+   SrcType value;
 
    if (Flags & LoadDS) {
       ea = bits::signExtend<16>(static_cast<uint64_t>(instr.ds) << 2);
    } else if (Flags & LoadIndexed) {
       ea = gpr(instr.rB);
    } else {
-      ea = bits::signExtend<16>(instr.d);
+      ea = bits::signExtend<16, uint64_t>(instr.d);
    }
 
    if (Flags & LoadUpdate) {
@@ -60,15 +48,20 @@ bool lxx(State *state, Instruction instr)
       ea += gpr0(instr.rA);
    }
 
+   #pragma warning(suppress: 4244)
+   value = be::Memory::read<SrcType>(ea);
+
+   if (Flags & LoadReversed) {
+      value = bits::swap(value);
+   }
+
    if (Flags & LoadFpu) {
-      fpr(instr.frD) = static_cast<ppc::freg_t>(be::Memory::read<SrcType>(ea));
+      fpr(instr.frD) = static_cast<ppc::freg_t>(value);
    } else {
       if (Flags & LoadZeroExtend) {
-         #pragma warning(suppress: 4244)
-         gpr(instr.rD) = be::Memory::read<SrcType>(ea);
+         gpr(instr.rD) = value;
       } else if (Flags & LoadSignExtend) {
-         #pragma warning(suppress: 4244)
-         gpr(instr.rD) = bits::signExtend<sizeof(SrcType)* 8, ppc::reg_t>(be::Memory::read<SrcType>(ea));
+         gpr(instr.rD) = bits::signExtend<sizeof(SrcType)* 8, ppc::reg_t>(value);
       }
    }
 
@@ -105,7 +98,19 @@ bool ld(State *state, Instruction instr)
    return lxx<uint64_t, LoadDS>(state, instr);
 }
 
-UNIMPLEMENTED(ldarx);    /* Load Doubleword and Reserve Indexed */
+/* Load Doubleword and Reserve Indexed */
+bool ldarx(State *state, Instruction instr)
+{
+   auto ea = gpr0(instr.rA) + gpr(instr.rB);
+   state->reg.reserve = 1;
+   state->reg.reserveAddress = ea;
+
+   if (ea & 0x7) {
+      return raise(state, ppc::Exceptions::Alignment);
+   }
+
+   return lxx<uint64_t, LoadZeroExtend | LoadIndexed>(state, instr);
+}
 
 /* Load Double with Update */
 bool ldu(State *state, Instruction instr)
@@ -197,7 +202,11 @@ bool lhax(State *state, Instruction instr)
    return lxx<uint16_t, LoadSignExtend | LoadIndexed>(state, instr);
 }
 
-UNIMPLEMENTED(lhbrx);    /* Load Halfword Byte-Reverse indexed */
+/* Load Halfword Byte-Reverse indexed */
+bool lhbrx(State *state, Instruction instr)
+{
+   return lxx<uint16_t, LoadZeroExtend | LoadReversed | LoadIndexed>(state, instr);
+}
 
 /* Load Halfword Zero Extend */
 bool lhz(State *state, Instruction instr)
@@ -223,9 +232,67 @@ bool lhzx(State *state, Instruction instr)
    return lxx<uint16_t, LoadZeroExtend | LoadIndexed>(state, instr);
 }
 
-UNIMPLEMENTED(lmw);      /* Load Multiple Word */
-UNIMPLEMENTED(lswi);     /* Load String Word Immediate */
-UNIMPLEMENTED(lswx);     /* Load String Word Indexed */
+/* Load Multiple Word */
+bool lmw(State *state, Instruction instr)
+{
+   auto ea = gpr0(instr.rA) + bits::signExtend<16, uint64_t>(instr.d);
+
+   if (ea & 0x3) {
+      raise(state, ppc::Exceptions::Alignment);
+      return true;
+   }
+
+   for (auto i = instr.rD; i <= 31; ++i) {
+      gpr(i) = be::Memory::read<uint32_t>(ea);
+      ea += 4;
+   }
+
+   return true;
+}
+
+/* Load String Word x */
+bool lsw(State *state, Instruction instr, uint64_t ea, uint64_t n)
+{
+   auto r = instr.rD - 1;
+   auto i = 32;
+
+   while (n > 0) {
+      if (i == 32) {
+         r = (r + 1) % 32;
+         gpr(r) = 0;
+      }
+
+      gpr(r) |= be::Memory::read<uint8_t>(ea) << (24 - i);
+      i += 8;
+
+      if (i == 64) {
+         i = 32;
+      }
+
+      ea++;
+      n--;
+   }
+
+   return true;
+}
+
+/* Load String Word Immediate */
+bool lswi(State *state, Instruction instr)
+{
+   return lsw(state,
+              instr,
+              gpr0(instr.rA),
+              instr.nb == 0 ? 32 : instr.nb);
+}
+
+/* Load String Word Indexed */
+bool lswx(State *state, Instruction instr)
+{
+   return lsw(state,
+              instr,
+              gpr0(instr.rA) + gpr(instr.rB),
+              state->reg.xer.byteCount);
+}
 
 /* Load Word Algebraic */
 bool lwa(State *state, Instruction instr)
@@ -233,7 +300,15 @@ bool lwa(State *state, Instruction instr)
    return lxx<uint32_t, LoadSignExtend>(state, instr);
 }
 
-UNIMPLEMENTED(lwarx);    /* Load Word and Reserve Indexed */
+/* Load Word and Reserve Indexed */
+bool lwarx(State *state, Instruction instr)
+{
+   auto ea = gpr0(instr.rA) + gpr(instr.rB);
+   state->reg.reserve = 1;
+   state->reg.reserveAddress = ea;
+
+   return lxx<uint32_t, LoadZeroExtend | LoadIndexed>(state, instr);
+}
 
 /* Load Word Algebraic with Update */
 bool lwau(State *state, Instruction instr)
@@ -253,7 +328,11 @@ bool lwax(State *state, Instruction instr)
    return lxx<uint32_t, LoadSignExtend | LoadIndexed>(state, instr);
 }
 
-UNIMPLEMENTED(lwbrx);    /* Load Word Byte-Reverse Indexed */
+/* Load Word Byte-Reverse Indexed */
+bool lwbrx(State *state, Instruction instr)
+{
+   return lxx<uint32_t, LoadZeroExtend | LoadReversed | LoadIndexed>(state, instr);
+}
 
 /* Load Word Zero Extend */
 bool lwz(State *state, Instruction instr)

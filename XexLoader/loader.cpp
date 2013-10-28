@@ -60,7 +60,7 @@ bool Loader::load(std::istream &istr)
       start = bes.tell();
                   
       /* Parse header data */
-      switch (id >> 8) {
+      switch (static_cast<Headers>(id >> 8)) {
       case xex::Headers::ResourceInfo:
          readHeader(bes, length, header.resourceInfo);
          break;

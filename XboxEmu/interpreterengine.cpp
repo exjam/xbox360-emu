@@ -27,17 +27,17 @@ bool InterpreterEngine::run(uint32_t address)
    uint8_t *stack = new uint8_t[stackSize];
    intState.reg.gpr[1] = (uint64_t)stack + stackSize;
 
-   for (uint32_t i = 0; i < 16; ++i) {
+   for (uint32_t i = 0; i < 100; ++i) {
       ppc::Disassembler::State disState;
       disState.cia = intState.cia;
 
       ins.value = be::Memory::read<uint32_t>(intState.cia);
 
       ppc::Disassembler::decode(&disState, ins);
+      xDebug() << disState.result.code << " " << disState.result.operands << " # " << disState.result.name;
+
       ppc::Interpreter::decode(&intState, ins);
-
-      xDebug() << ppc::Disassembler::toString(&disState).c_str();
-
+      
       intState.cia = intState.nia;
       intState.nia = intState.cia + 4;
    }

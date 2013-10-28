@@ -19,9 +19,12 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="parser\optional.h" />
+    <ClInclude Include="parser\parser.h" />
     <ClInclude Include="util\be\inputstream.h" />
     <ClInclude Include="util\be\memory.h" />
     <ClInclude Include="util\bits.h" />
+    <ClInclude Include="util\flags.h" />
     <ClInclude Include="util\log.h" />
   </ItemGroup>
   <ItemGroup>

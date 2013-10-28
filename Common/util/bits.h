@@ -57,6 +57,11 @@ static inline unsigned long beScanForward(uint64_t value)
 }
 
 /* Swap between little endian and big endian */
+static inline uint8_t swap(uint8_t value)
+{
+   return value;
+}
+
 static inline uint16_t swap(uint16_t value)
 {
    return _byteswap_ushort(value);
@@ -86,7 +91,22 @@ static inline double swap(double value)
 template<typename Type>
 Type mask(int bits)
 {
+   if (bits == count<Type>()) {
+      return -1;
+   }
+
    return (static_cast<Type>(1) << bits) - 1;
+}
+
+/* Generate a mask between start and end */
+template<typename Type>
+Type mask(int start, int end)
+{
+   if (end < start) {
+      return mask<Type>(end, start);
+   } else {
+      return mask<Type>((end - start) + 1) << start;
+   }
 }
 
 /* Get a bit */
@@ -116,7 +136,7 @@ Type clear(Type value, uint32_t bit)
 }
 
 /* SignExtend from width to DstType */
-template<int width, typename DstType>
+template<int width, typename DstType = uint64_t>
 static inline DstType signExtend(DstType v)
 {
    return get(v, width - 1) == 0 ? v : (v | ~mask<DstType>(width));
@@ -144,7 +164,7 @@ struct field
    {
    }
 
-   operator SrcType()
+   operator SrcType() const
    {
       return (value >> Start) & bits::mask<SrcType>(Size);
    }
@@ -161,6 +181,7 @@ struct field
    field &operator=(const field<Type, Start, Size> &o)
    {
       (*this) = static_cast<SrcType>(static_cast<Type>(o));
+      return *this;
    }
 
    SrcType& value;
@@ -190,7 +211,7 @@ struct field<SrcType, 0, 0>
    template<typename Type, int Start, int Size>
    field &operator=(const field<Type, Start, Size> &o)
    {
-      this->operator =(o.operator Type());
+      (*this) = static_cast<SrcType>(static_cast<Type>(o));
       return *this;
    }
 
@@ -198,6 +219,56 @@ struct field<SrcType, 0, 0>
    int size;
    SrcType& value;
 };
+
+template<typename SrcType, int Start_, int End_>
+struct range : public field<SrcType, Start_ < End_ ? Start_ : End_, Start_ < End_ ? 1 + End_ - Start_ : 1 + Start_ - End_>
+{
+   static const int Start = Start_ < End_ ? Start_ : End_;
+   static const int Size = Start_ < End_ ? 1 + End_ - Start_ : 1 + Start_ - End_;
+
+   range(SrcType &value) :
+      field(value)
+   {
+   }
+
+   range &operator=(const SrcType& v)
+   {
+      field<SrcType, Start, Size> &self = *this;
+      self = v;
+      return *this;
+   }
+};
+
+template<int Start, int End, typename SrcType>
+range<SrcType, Start, End> makeRange(SrcType &src)
+{
+   return range<SrcType, Start, End>(src);
+}
+
+template<int Bit, typename Type>
+void copy(Type &dst, Type &src)
+{
+   dst &= ~(1 << Bit);
+   dst |= (src & 1) << Bit;
+}
+
+template<int Start, int End, typename Type>
+void copy(Type &dst, Type &src)
+{
+   makeRange<Start, End, Type>(dst) = makeRange<Start, End, Type>(src);
+}
+
+template<int Bit, typename Type>
+void clear(Type &dst)
+{
+   dst &= ~(1 << Bit);
+}
+
+template<int Start, int End, typename Type>
+void clear(Type &dst)
+{
+   range<SrcType, Start, End>(dst) = 0;
+}
 
 } // namespace bits
 

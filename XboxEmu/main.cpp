@@ -30,7 +30,6 @@ int main(int argc, char** argv)
    file.close();
 
    InterpreterEngine engine;
-   //engine.run(0x82F23520);
    engine.run(0x82F23470);
 
    /*

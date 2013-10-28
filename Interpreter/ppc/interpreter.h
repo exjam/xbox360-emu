@@ -16,6 +16,8 @@ struct State {
    Registers reg;
 };
 
+bool raise(State *state, ppc::Exceptions exception);
+
 #include "emugen_instr_table.h"
 
 } // namespace Interpreter

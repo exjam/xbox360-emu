@@ -6,6 +6,8 @@
 #include "util/bits.h"
 #include "util/be/memory.h"
 
+#include "common.h"
+
 #include <limits>
 #include <float.h>
 #include <cmath>
@@ -16,22 +18,6 @@ namespace ppc
 namespace Interpreter
 {
    
-#define UNIMPLEMENTED(insName) \
-   bool insName (State *state, Instruction) { \
-      xDebug() << "Unimplemented interpreter instruction "#insName ; \
-      return false; \
-   }
-
-#define fpr(id) state->reg.fpr[id]
-#define crn(n) bits::field<uint32_t>(state->reg.cr.value, n * 4, n)
-#define fpscr(n) bits::field<uint32_t>(state->reg.fpscr.value, n * 4, n)
-
-template<typename DstType, typename SrcType>
-static inline DstType& reinterpret(SrcType& value)
-{
-   return *reinterpret_cast<DstType*>(&value);
-}
-
 static inline void updateVx(State *state)
 {
    Fpscr fpscr = state->reg.fpscr;

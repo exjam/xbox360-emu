@@ -32,12 +32,18 @@
     <ClCompile Include="interpreter_cpu.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="interpreter_mmu.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ppc\interpreter.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ppc\fpu.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="common.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

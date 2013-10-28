@@ -45,6 +45,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Interpreter", "Interpreter\
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "EmuGen", "EmuGen\EmuGen.vcxproj", "{7BC01F00-1362-4959-9709-10190DBA070E}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CodeTests", "CodeTests\CodeTests.vcxproj", "{9ADB4C86-D2BE-4D2E-AA50-59326B45F16A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Mixed Platforms = Debug|Mixed Platforms
@@ -145,6 +147,17 @@ Global
 		{7BC01F00-1362-4959-9709-10190DBA070E}.Release|Win32.ActiveCfg = Release|Win32
 		{7BC01F00-1362-4959-9709-10190DBA070E}.Release|Win32.Build.0 = Release|Win32
 		{7BC01F00-1362-4959-9709-10190DBA070E}.Release|x64.ActiveCfg = Release|x64
+		{9ADB4C86-D2BE-4D2E-AA50-59326B45F16A}.Debug|Mixed Platforms.ActiveCfg = Debug|Win32
+		{9ADB4C86-D2BE-4D2E-AA50-59326B45F16A}.Debug|Mixed Platforms.Build.0 = Debug|Win32
+		{9ADB4C86-D2BE-4D2E-AA50-59326B45F16A}.Debug|Win32.ActiveCfg = Debug|Win32
+		{9ADB4C86-D2BE-4D2E-AA50-59326B45F16A}.Debug|Win32.Build.0 = Debug|Win32
+		{9ADB4C86-D2BE-4D2E-AA50-59326B45F16A}.Debug|x64.ActiveCfg = Debug|x64
+		{9ADB4C86-D2BE-4D2E-AA50-59326B45F16A}.Debug|x64.Build.0 = Debug|x64
+		{9ADB4C86-D2BE-4D2E-AA50-59326B45F16A}.Release|Mixed Platforms.ActiveCfg = Release|Win32
+		{9ADB4C86-D2BE-4D2E-AA50-59326B45F16A}.Release|Mixed Platforms.Build.0 = Release|Win32
+		{9ADB4C86-D2BE-4D2E-AA50-59326B45F16A}.Release|Win32.ActiveCfg = Release|Win32
+		{9ADB4C86-D2BE-4D2E-AA50-59326B45F16A}.Release|Win32.Build.0 = Release|Win32
+		{9ADB4C86-D2BE-4D2E-AA50-59326B45F16A}.Release|x64.ActiveCfg = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
