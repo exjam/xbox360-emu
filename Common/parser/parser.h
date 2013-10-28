@@ -407,7 +407,7 @@ struct ast_definition : parser<ast_definition<Rule, RHS>>
 
    typedef typename Rule::Structure val_type;
 
-   template <typename Iterator, typename Context, bool Atomic>
+   template <typename Iterator, typename Context, bool Atomic = false>
    bool parse(Iterator& first, Iterator last, Context& ctx, val_type &myv) const
    {
       RHS::val_type v;

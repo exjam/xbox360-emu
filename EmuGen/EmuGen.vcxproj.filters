@@ -26,12 +26,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="parser.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="optional.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="ast.h">
       <Filter>Header Files</Filter>
     </ClInclude>
