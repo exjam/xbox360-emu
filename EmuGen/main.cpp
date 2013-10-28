@@ -1,6 +1,8 @@
 #include "emugen.h"
 #include <iostream>
 
+#include "../Common/util/bits.h"
+
 int main(int argc, char **argv)
 {
    if (argc < 3) {

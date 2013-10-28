@@ -3,8 +3,9 @@
 
 #include <string>
 #include <vector>
+#include <map>
 #include <utility>
-#include "optional.h"
+#include "parser/optional.h"
 
 struct ast_symbol {
    std::string value;
@@ -184,7 +185,7 @@ struct ast_insf_extra {
 struct ast_insf_field {
    ast_symbol name;
    ast_bitrange bitrange;
-   std::vector<ast_insf_extra> extras;
+   std::map<std::string, ast_insf_extra> extras;
 
    template<typename Sequence>
    void construct(Sequence& ps)
@@ -193,10 +194,10 @@ struct ast_insf_field {
       bitrange = ps.first.second;
 
       if (ps.second) {
-         extras.push_back(ps.second->first.second);
+         extras[ps.second->first.second.name.value] = ps.second->first.second;
 
          for (auto es : ps.second->second) {
-            extras.push_back(es.second);
+            extras[es.second.name.value] = es.second;
          }
       }
    }
@@ -215,7 +216,12 @@ struct ast_opcd_disasm {
          operands.push_back(ps.second->first);
 
          for (auto ops : ps.second->second) {
-            operands.push_back(ops.second);
+            if (ops.first.first == '(') {
+               ops.first.second.value.push_back(')');
+               ops.first.second.value.insert(0, 1, '(');
+            }
+
+            operands.push_back(ops.first.second);
          }
       }
    }
@@ -247,7 +253,7 @@ struct ast_opcd_extra {
 struct ast_opcd_def {
    ast_number id;
    ast_opcd_disasm disasm;
-   std::vector<ast_opcd_extra> extras;
+   std::map<std::string, ast_opcd_extra> extras;
 
    template<typename Sequence>
    void construct(Sequence& ps)
@@ -256,10 +262,10 @@ struct ast_opcd_def {
       disasm = ps.first.second;
 
       if (ps.second) {
-         extras.push_back(ps.second->first.second);
+         extras[ps.second->first.second.name.value] = ps.second->first.second;
 
          for (auto es : ps.second->second) {
-            extras.push_back(es.second);
+            extras[es.second.name.value] = es.second;
          }
       }
    }

@@ -1,4 +1,4 @@
-#include "parser.h"
+#include "parser/parser.h"
 #include "emugen.h"
 #include "ast.h"
 
@@ -44,8 +44,7 @@ auto insf_root     = ast<ast_insf>()        >> *insf_field;
 /* Opcode Definition */
 auto cat_opcd      = ast<ast_cat_opcd>()    >> (char_('[') >> symbol >> *(char_('=') >> number >> char_(',') >> symbol) >> char_(']'));
 auto opcd_extra    = ast<ast_opcd_extra>()  >> (symbol >> -(char_('=') >> (number | str | chr)));
-auto opcd_operand  = ast<ast_symbol>()      >> atomic((letter | char_('(') | char_(')') | char_('_')) >> *(letter | digit | char_('(') | char_(')') | char_('_')));
-auto opcd_disasm   = ast<ast_opcd_disasm>() >> (name >> -(opcd_operand >> *(char_(',') >> opcd_operand)));
+auto opcd_disasm   = ast<ast_opcd_disasm>() >> (name >> -(symbol >> *((char_(',') | char_('(')) >> symbol >> -char_(')'))));
 auto opcd_def      = ast<ast_opcd_def>()    >> (number >> char_(':') >> opcd_disasm >> -(char_(':') >> opcd_extra >> *(char_(',') >> opcd_extra)));
 auto opcd_root     = ast<ast_opcd>()        >> (cat_opcd >> *opcd_def);
 
@@ -86,7 +85,7 @@ bool EmuGen::parseFile(const std::string &path)
 
    auto pos = file.begin();
 
-   if (!parser_root.parse<decltype(pos), decltype(ctx), false>(pos, file.end(), ctx, m_ast) || pos != file.end()) {
+   if (!parser_root.parse(pos, file.end(), ctx, m_ast) || pos != file.end()) {
       decltype(pos) lineStart, lineEnd;
       auto error = pos;
 

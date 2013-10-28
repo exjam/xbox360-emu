@@ -47,9 +47,69 @@ bool EmuGen::createDisassembler(const std::string &path)
    }
 
    for (auto &instr : m_instructionList) {
-	  out << "/* " << instr->disasm.name.value << " */" << std::endl;
-	  out << "bool " << getSafeFunctionName(instr->disasm.name.value) << "(State *state, Instruction instr)" << std::endl;
+      auto fullname = instr.second->extras["fullname"].string->value;
+      auto codename = instr.second->disasm.name.value;
+      bool first;
+
+      out << "/* " << fullname << " */" << std::endl;
+      out << "bool " << getSafeFunctionName(codename) << "(State *state, Instruction instr)" << std::endl;
       out << "{" << std::endl;
+      out << "   char buffer[64];" << std::endl;
+      out << "   " << "state->result.code = \"" << codename << "\";" << std::endl;
+      out << "   " << "state->result.name = \"" << fullname << "\";" << std::endl;
+
+      out << "   " << "sprintf_s(buffer, 64, \"";
+
+      first = true;
+
+      for (auto &op : instr.second->disasm.operands) {
+         auto insf = findInstructionField(op.value);
+
+         if (!insf) {
+            std::cout << "Unknown instruction field " << op.value << std::endl;
+            return false;
+         }
+
+         if (op.value[0] == '(') {
+            out << "(";
+         } else if (!first) {
+            out << ", ";
+         }
+
+         first = false;
+
+         if (insf->extras.find("disasm") != insf->extras.end()) {
+            auto &disasm = insf->extras["disasm"];
+            out << disasm.string->value;
+         } else {
+            out << "%u";
+         }
+
+         if (op.value[0] == '(') {
+            out << ")";
+         }
+      }
+
+      out << "\"";
+
+      for (auto &op : instr.second->disasm.operands) {
+         auto insf = findInstructionField(op.value);
+
+         out << ", ";
+
+         if (insf->extras.find("value") != insf->extras.end()) {
+            auto &value = insf->extras["value"];
+            out << value.string->value;
+         } else {
+            out << "instr." << insf->name.value;
+         }
+      }
+
+      out << ");" << std::endl;
+
+      out << "   " << "state->result.operands = buffer;" << std::endl;
+
+      out << "   " << "return true;" << std::endl;
       out << "}" << std::endl;
       out << std::endl;
    }
@@ -71,20 +131,21 @@ bool EmuGen::createInstructionList(const std::string &path)
 
    for (auto &group : m_ast.opcodes) {
       for (auto &opcode : group.opcodes) {
-         m_instructionList.push_back(&opcode);
+         m_instructionList[opcode.disasm.name.value] = &opcode;
       }
    }
 
+   /* map is already sorted
    std::sort(m_instructionList.begin(),
              m_instructionList.end(),
              [](ast_opcd_def *lhs, ast_opcd_def *rhs) {
                 return lhs->disasm.name.value < rhs->disasm.name.value;
-             });
+             });*/
 
    out << "enum InstructionList {" << std::endl;
 
    for (auto &instr : m_instructionList) {
-      out << "   " << getSafeFunctionName(instr->disasm.name.value) << " = " << instr->id.value << "," << std::endl;
+      out << "   " << getSafeFunctionName(instr.first) << " = " << instr.second->id.value << "," << std::endl;
    }
 
    out << "};" << std::endl;
@@ -109,7 +170,7 @@ bool EmuGen::createInstructionTableHeader(const std::string &path)
    out << std::endl;
 
    for (auto &instr : m_instructionList) {
-      out << "bool " << getSafeFunctionName(instr->disasm.name.value) << "(State *state, Instruction instr);" << std::endl;
+      out << "bool " << getSafeFunctionName(instr.first) << "(State *state, Instruction instr);" << std::endl;
    }
 
    out.close();
@@ -296,7 +357,7 @@ bool EmuGen::createInstructionTableSource(const std::string &path)
 
 
    std::function<void(ast_arch::Endian, Node*, const std::string &)> decodeChildren =
-      [&out, &decodeFunction](ast_arch::Endian endian, Node *node, const std::string &parent)
+      [&out, &decodeChildren, &decodeFunction](ast_arch::Endian endian, Node *node, const std::string &parent)
       {
          /* Iterate through unique keys */
          for (auto itr = node->children.begin(); itr != node->children.end(); itr = node->children.upper_bound(itr->first)) {
@@ -319,6 +380,11 @@ bool EmuGen::createInstructionTableSource(const std::string &path)
 
             /* Create the child decode functions */
             decodeFunction(endian, nodes, name + "_" + std::to_string(itr->first));
+
+            /* Check all children */
+            for (auto jtr = range.first; jtr != range.second; ++jtr) {
+               decodeChildren(endian, jtr->second, name + "_" + std::to_string(itr->first));
+            }
          }
       };
 
@@ -362,8 +428,13 @@ std::string EmuGen::getSafeFunctionName(const std::string &name)
    return result;
 }
 
-ast_insf_field *EmuGen::findInstructionField(const std::string &name)
+ast_insf_field *EmuGen::findInstructionField(std::string name)
 {
+   if (name[0] == '(') {
+      name.erase(name.begin());
+      name.erase(name.end() - 1);
+   }
+
    for (auto &field : m_ast.insf.fields) {
       if (name.compare(field.name.value) == 0) {
          return &field;

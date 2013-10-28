@@ -3,6 +3,9 @@
 
 #include "ast.h"
 
+#include <string>
+#include <map>
+
 class EmuGen
 {
 public:
@@ -20,12 +23,12 @@ protected:
 
    bool createDisassembler(const std::string &path);
 
-   ast_insf_field *findInstructionField(const std::string &name);
+   ast_insf_field *findInstructionField(std::string name);
    static std::string getSafeFunctionName(const std::string &name);
 
 private:
    ast_root m_ast;
-   std::vector<ast_opcd_def *> m_instructionList;
+   std::map<std::string, ast_opcd_def *> m_instructionList;
 };
 
 #endif // ifdef EMUGEN_H
