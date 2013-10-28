@@ -80,32 +80,50 @@ opcd = 0...5
 xo2 = 21...30
 xo3 = 22...30
 xo4 = 26...30
+xo5 = 30...31
+xo6 = 11
+xo7 = 27...30
+xo8 = 27...29
 
 // Instruction data
-bd = 16...29 : disasm = "addr(bd)", value = "(aa ? 0 : state->cia) + signExtend<16>(bd << 2)"
-bi = 11...15
-bo = 6...10
-crbA = 11...15
-crbB = 16...20
-crbD = 6...10
-crfD = 6...8
-crfS = 11...13
-d = 16...31 : value = "signExtend<16>(d)"
-ds = 16...29 : value = "signExtend<16>(ds << 2), base = 16, width = 8, fill = 0"
-frA = 11...15
-frB = 16...20
-frC = 21...25
-frD = 6...10
-uimm = 16...31
-simm = 16...31 : value = "signExtend<16>(simm)"
-l = 9...10
-li = 6...29 : disasm = "addr(li)", value = "(aa ? 0 : state->cia) + signExtend<26>(li << 2)"
-rA = 11...15 : disasm = "gpr(rA)"
-rB = 16...20 : disasm = "gpr(rB)"
-rD = 6...10 : disasm = "gpr(rD)"
-rS = 6...10 : disasm = "gpr(rS)"
-spr = 11...20
-th = 9...10
+bd    = 16...29 : disasm = "0x%08X", value = "(instr.aa ? 0 : state->cia) + bits::signExtend<16, uint64_t>(instr.bd << 2)"
+bi    = 11...15
+bo    =  6...10
+bh    = 19...20
+crbA  = 11...15
+crbB  = 16...20
+crbD  =  6...10
+crfD  =  6...8
+crfS  = 11...13
+d     = 16...31 : disasm = "%lli", value = "bits::signExtend<16, uint64_t>(instr.d)"
+ds    = 16...29 : disasm = "%lli", value = "bits::signExtend<16, uint64_t>(instr.ds << 2)"
+frA   = 11...15 : disasm = "fr%u"
+frB   = 16...20 : disasm = "fr%u"
+frC   = 21...25 : disasm = "fr%u"
+frD   =  6...10 : disasm = "fr%u"
+frS   =  6...10 : disasm = "fr%u"
+uimm  = 16...31
+simm  = 16...31 : disasm = "%lli", value = "bits::signExtend<16, uint64_t>(instr.simm)"
+l     =  9...10
+li    =  6...29 : disasm = "0x%08X", value = "(instr.aa ? 0 : state->cia) + bits::signExtend<26, uint64_t>(instr.li << 2)"
+rA    = 11...15 : disasm = "r%u"
+rB    = 16...20 : disasm = "r%u"
+rD    =  6...10 : disasm = "r%u"
+rS    =  6...10 : disasm = "r%u"
+spr   = 11...20 : disasm = "s%u"
+th    =  9...10
+sr    = 12...15
+tbr   = 11...20
+crm   = 12...19
+fm    =  7...14
+nb    = 16...20
+l15   = 15
+syncl =  9...10
+tlbl  = 10
+sh    = 16...20
+mb    = 21...25
+me    = 26...30
+to    = 6...10
 
 // aa and lk effects branch instruction names
 aa = 30 : name = "name + 'a'"
@@ -115,6 +133,8 @@ lk = 31 : name = "name + 'l'"
 oe = 21 : name = "name + '.'"
 rc = 31 : name = "name + 'o'"
 
+
+//TODO: rldcl, rldcr, rldic, rldicr, rldimi
 [opcd]
   14 : addi    rD, rA, simm                    : fullname = "Add Immediate"
   12 : addic   rD, rA, simm                    : fullname = "Add Immediate Carrying"
@@ -126,12 +146,49 @@ rc = 31 : name = "name + 'o'"
   16 : bc      bo, bi, bd                      : fullname = "Branch Conditional", lk, aa
   11 : cmpi    crfD, l, rA, simm               : fullname = "Compare Immediate"
   10 : cmpli   crfD, l, rA, uimm               : fullname = "Compare Logical Immediate"
+  34 : lbz     rD, d(rA)                       : fullname = "Load Byte and Zero"
+  35 : lbzu    rD, d(rA)                       : fullname = "Load Byte and Zero with Update"
+  50 : lfd     frD, d(rA)                      : fullname = "Load Floating-Point Double"
+  51 : lfdu    frD, d(rA)                      : fullname = "Load Floating-Point Double with Update"
+  48 : lfs     frD, d(rA)                      : fullname = "Load Floating-Point Single"
+  49 : lfsu    frD, d(rA)                      : fullname = "Load Floating-Point Single with Update"
+  42 : lha     rD, d(rA)                       : fullname = "Load Halfword Algebraic"
+  43 : lhau    rD, d(rA)                       : fullname = "Load Halfword Algebraic with Update"
+  40 : lhz     rD, d(rA)                       : fullname = "Load Halfword and Zero"
+  41 : lhzu    rD, d(rA)                       : fullname = "Load Halfword and Zero with Update"
+  46 : lmw     rD, d(rA)                       : fullname = "Load Multiple Word"
+  32 : lwz     rD, d(rA)                       : fullname = "Load Word and Zero"
+  33 : lwzu    rD, d(rA)                       : fullname = "Load Word and Zero with Update"
+  19 : mcrf    crfD, crfS                      : fullname = "Move Condition Register Field"
+  63 : mcrfs   crfD, crfS                      : fullname = "Move to Condition Register from FPSCR"
+   7 : mulli   rD, rA, simm                    : fullname = "Multiply Low Immediate"
+  24 : ori     rA, rS, uimm                    : fullname = "OR Immediate"
+  25 : oris    rA, rS, uimm                    : fullname = "OR Immediate Shifted"
+  20 : rlwimi  rA, rS, sh, mb, me              : fullname = "Rotate Left Word Immediate then Mask Insert", rc
+  21 : rlwinm  rA, rS, sh, mb, me              : fullname = "Rotate Left Word Immediate then AND with Mask", rc
+  23 : rlwnm   rA, rS, rB, mb, me              : fullname = "Rotate Left Word then AND with Mask", rc
+  17 : sc                                      : fullname = "System Call"
   38 : stb     rS, d(rA)                       : fullname = "Store Byte"
   39 : stbu    rS, d(rA)                       : fullname = "Store Byte with Update"
+  54 : stfd    frS, d(rA)                      : fullname = "Store Floating-Point Double"
+  55 : stfdu   frS, d(rA)                      : fullname = "Store Floating-Point Double with Update"
+  52 : stfs    frS, d(rA)                      : fullname = "Store Floating-Point Single"
+  53 : stfsu   frS, d(rA)                      : fullname = "Store Floating-Point Single with Update"
   44 : sth     rS, d(rA)                       : fullname = "Store Halfword"
   45 : sthu    rS, d(rA)                       : fullname = "Store Halfword with Update"
   36 : stw     rS, d(rA)                       : fullname = "Store Word"
   37 : stwu    rS, d(rA)                       : fullname = "Store Word with Update"
+  47 : stmw    rS, d(rA)                       : fullname = "Store Multiple Word"
+   8 : subfic  rD, rA, simm                    : fullname = "Subtract From Immediate Carrying"
+   2 : tdi     to, rA, simm                    : fullname = "Trap Doubleword Immediate"
+   3 : twi     to, rA, simm                    : fullname = "Trap Word Immediate"
+  26 : xori    rA, rS, uimm                    : fullname = "XOR Immediate"
+  27 : xoris   rA, rS, uimm                    : fullname = "XOR Immediate Shifted"
+
+[opcd = 58, xo5]
+   0 : ld      rD, ds(rA)                      : fullname = "Load Doubleword"
+   1 : ldu     rD, ds(rA)                      : fullname = "Load Doubleword with Update"
+   2 : lwa     rD, ds(rA)                      : fullname = "Load Word Algebraic"
 
 [opcd = 62, rc]
    0 : std     rS, ds(rA)                      : fullname = "Store Doubleword"
@@ -148,8 +205,20 @@ rc = 31 : name = "name + 'o'"
  449 : cror    crbD, crbA, crbB                : fullname = "Condition Register OR"
  417 : crorc   crbD, crbA, crbB                : fullname = "Condition Register OR with Complement"
  193 : crxor   crbD, crbA, crbB                : fullname = "Condition Register XOR"
+  18 : rfid                                    : fullname = "Return from Interrupt Doubleword"
 
+[opcd = 30, xo7]
+   8 : rldcl   rA, rS, rB, mb                  : fullname = "Rotate Left Doubleword then Clear Left", rc
+   9 : rldcr   rA, rS, rB, mb                  : fullname = "Rotate Left Doubleword then Clear Right", rc
+   
+[opcd = 30, xo8]
+   2 : rldic   rA, rS, sh, mb                  : fullname = "Rotate Left Doubleword Immediate then Clear", rc
+   0 : rldicl  rA, rS, sh, mb                  : fullname = "Rotate Left Doubleword Immediate then Clear Left", rc
+   1 : rldicr  rA, rS, sh, mb                  : fullname = "Rotate Left Doubleword Immediate then Clear Right", rc
+   
 [opcd = 31, xo2]
+  28 : and     rA, rS, rB                      : fullname = "AND", rc
+  60 : andc    rA, rS, rB                      : fullname = "AND with Complement", rc
    0 : cmp     crfD, l, rA, rB                 : fullname = "Compare"
   32 : cmpl    crfD, l, rA, rB                 : fullname = "Compare Logical"
   58 : cntlzd  rA, rS                          : fullname = "Count Leading Zeros Doubleword"
@@ -167,21 +236,115 @@ rc = 31 : name = "name + 'o'"
  986 : extsw   rA, rS                          : fullname = "Extend Sign Word", rc
  982 : icbi    rA, rB                          : fullname = "Instruction Cache Block Invalidate"
  150 : isync   rA, rB                          : fullname = "Instruction Synchronize"
+ 119 : lbzux   rD, rA, rB                      : fullname = "Load Byte and Zero with Update Indexed"
+  87 : lbzx    rD, rA, rB                      : fullname = "Load Byte and Zero Indexed"
+  84 : ldarx   rD, rA, rB                      : fullname = "Load Doubleword and Reserve Indexed"
+  53 : ldux    rD, rA, rB                      : fullname = "Load Doubleword with Update Indexed"
+  21 : ldx     rD, rA, rB                      : fullname = "Load Doubleword Indexed"
+ 631 : lfdux   frD, rA, rB                     : fullname = "Load Floating-Point Double with Update Indexed"
+ 599 : lfdx    frD, rA, rB                     : fullname = "Load Floating-Point Double Indexed"
+ 567 : lfsux   frD, rA, rB                     : fullname = "Load Floating-Point Single with Update Indexed"
+ 535 : lfsx    frD, rA, rB                     : fullname = "Load Floating-Point Single Indexed"
+ 375 : lhaux   rD, rA, rB                      : fullname = "Load Halfword Algebraic with Update Indexed"
+ 343 : lhax    rD, rA, rB                      : fullname = "Load Halfword Algebraic Indexed"
+ 790 : lhbrx   rD, rA, rB                      : fullname = "Load Halfword Byte-Reverse Indexed"
+ 311 : lhzux   rD, rA, rB                      : fullname = "Load Halfword and Zero with Update Indexed"
+ 279 : lhzx    rD, rA, rB                      : fullname = "Load Halfword and Zero Indexed"
+ 597 : lswi    rD, rA, nb                      : fullname = "Load String Word Immediate"
+ 533 : lswx    rD, rA, rB                      : fullname = "Load String Word Indexed"
+  20 : lwarx   rD, rA, rB                      : fullname = "Load Word and Reserve Indexed"
+ 373 : lwaux   rD, rA, rB                      : fullname = "Load Word Algebraic with Update Indexed"
+ 341 : lwax    rD, rA, rB                      : fullname = "Load Word Algebraic Indexed"
+ 534 : lwbrx   rD, rA, rB                      : fullname = "Load Word Byte-Reverse Indexed"
+  55 : lwzux   rD, rA, rB                      : fullname = "Load Word and Zero with Update Indexed"
+  23 : lwzx    rD, rA, rB                      : fullname = "Load Word and Zero Indexed"
+  83 : mfmsr   rD                              : fullname = "Move from Machine State Register"
  339 : mfspr   rD, spr                         : fullname = "Move from Special-Purpose Register"
-   
+ 595 : mfsr    rD, sr                          : fullname = "Move from Segment Register"
+ 659 : mfsrin  rD, rB                          : fullname = "Move from Segment Register Indirect"
+ 371 : mftb    rD, tbr                         : fullname = "Move from Time Base"
+ 146 : mtmsr   rS, l15                         : fullname = "Move to Machine State Register"
+ 178 : mtmsrd  rS, l15                         : fullname = "Move to Machine State Register Doubleword"
+ 467 : mtspr   spr, rS                         : fullname = "Move to Special-Purpose Register"
+ 210 : mtsr    sr, rS                          : fullname = "Move to Segment Register"
+ 242 : mtsrin  rS, rB                          : fullname = "Move to Segment Register Indirect"
+ 476 : nand    rA, rS, rB                      : fullname = "NAND", rc
+ 124 : nor     rA, rS, rB                      : fullname = "NOR", rc
+ 444 : or      rA, rS, rB                      : fullname = "OR", rc
+ 412 : orc     rA, rS, rB                      : fullname = "OR with Complement", rc
+ 498 : slbia                                   : fullname = "SLB Invalidate All"
+ 434 : slbie   rB                              : fullname = "SLB Invalidate Entry"
+ 915 : slbmfee rD, rB                          : fullname = "SLB Move From Entry ESID"
+ 851 : slbmfev rD, rB                          : fullname = "SLB Move From Entry VSID"
+ 402 : slbmte  rS, rB                          : fullname = "SLB Move To Entry"
+  27 : sld     rA, rS, rB                      : fullname = "Shift Left Doubleword", rc
+  24 : slw     rA, rS, rB                      : fullname = "Shift Left Word", rc
+ 794 : srad    rA, rS, rB                      : fullname = "Shift Right Algebraic Doubleword", rc
+ 826 : sradi   rA, rS, sh                      : fullname = "Shift Right Algebraic Doubleword Immediate", rc
+ 827 : sradi   rA, rS, sh                      : fullname = "Shift Right Algebraic Doubleword Immediate", rc
+ 792 : sraw    rA, rS, rB                      : fullname = "Shift Right Algebraic Word", rc
+ 824 : srawi   rA, rS, sh                      : fullname = "Shift Right Algebraic Word Immediate", rc
+ 539 : srd     rA, rS, rB                      : fullname = "Shift Right Doubleword", rc
+ 536 : srw     rA, rS, rB                      : fullname = "Shift Right Word", rc
+ 214 : stdcx   rS, rA, rB                      : fullname = "Store Doubleword Conditional Indexed", rc
+ 181 : stdux   rS, rA, rB                      : fullname = "Store Doubleword with Update Indexed"
+ 149 : stdx    rS, rA, rB                      : fullname = "Store Doubleword Indexed"
+ 759 : stfdux  frS, rA, rB                     : fullname = "Store Floating-Point Double with Update Indexed"
+ 727 : stfdx   frS, rA, rB                     : fullname = "Store Floating-Point Double Indexed"
+ 983 : stfiwx  frS, rA, rB                     : fullname = "Store Floating-Point as Integer Word Indexed"
+ 795 : stfsux  frS, rA, rB                     : fullname = "Store Floating-Point Single with Update Indexed"
+ 663 : stfsx   frS, rA, rB                     : fullname = "Store Floating-Point Single Indexed"
+ 918 : sthbrx  rS, rA, rB                      : fullname = "Store Halfword Byte-Reverse Indexed"
+ 439 : sthux   rS, rA, rB                      : fullname = "Store Halfword with Update Indexed"
+ 407 : sthx    rS, rA, rB                      : fullname = "Store Halfword Indexed"
+ 725 : stswi   rS, rA, nb                      : fullname = "Store String Word Immediate"
+ 661 : stswx   rS, rA, rB                      : fullname = "Store String Word Indexed"
+ 662 : stwbrx  rS, rA, rB                      : fullname = "Store Word Byte-Reverse Indexed"
+ 150 : stwcx   rS, rA, rB                      : fullname = "Store Word Conditional Indexed", rc
+ 183 : stwux   rS, rA, rB                      : fullname = "Store Word with Update Indexed"
+ 151 : stwx    rS, rA, rB                      : fullname = "Store Word Indexed"
+ 598 : sync    syncl                           : fullname = "Synchronize"
+  31 : td      to, rA, rB                      : fullname = "Trap Doubleword"
+ 370 : tlbia                                   : fullname = "Translation Lookaside Buffer Invalidate All"
+ 306 : tlbie   rB, tlbl                        : fullname = "Translation Lookaside Buffer Invalidate Entry"
+ 274 : tlbiel  rB, tlbl                        : fullname = "Translation Lookaside Buffer Invalidate Entry Local"
+ 566 : tlbsync                                 : fullname = "Translation Lookaside Buffer Synchronize"
+   4 : tw      to, rA, rB                      : fullname = "Trap Word"
+ 316 : xor     rA, rS, rB                      : fullname = "XOR", rc
+
+[opcd = 31, xo2 = 19, xo6]
+   0 : mfcr    rD                              : fullname = "Move from Condition Register"
+   1 : mfocrf  rD, crm                         : fullname = "Move from One Condition Register Field"
+
+[opcd = 31, xo2 = 144, xo6]
+   0 : mtcrf   crm, rS                         : fullname = "Move to Condition Register Fields"
+   1 : mtocrf  crm, rS                         : fullname = "Move to One Condition Register Field"
+ 
 [opcd = 31, xo3]
  266 : add     rD, rA, rB                      : fullname = "Add", oe, rc
   10 : addc    rD, rA, rB                      : fullname = "Add Carrying", oe, rc
  138 : adde    rD, rA, rB                      : fullname = "Add Extended", oe, rc
  234 : addme   rD, rA                          : fullname = "Add to Minus One Extended", oe, rc
  202 : addze   rD, rA                          : fullname = "Add to Zero Extended", oe, rc
-  28 : and     rA, rS, rB                      : fullname = "AND", rc
-  60 : andc    rA, rS, rB                      : fullname = "AND with Complement", rc
  489 : divd    rD, rA, rB                      : fullname = "Divide Doubleword", oe, rc
  457 : divdu   rD, rA, rB                      : fullname = "Divide Doubleword Unsigned", oe, rc
  491 : divw    rD, rA, rB                      : fullname = "Divide Word", oe, rc
  459 : divwu   rD, rA, rB                      : fullname = "Divide Word Unsigned", oe, rc
  284 : eqv     rA, rS, rB                      : fullname = "Equivalent", rc
+  73 : mulhd   rD, rA, rB                      : fullname = "Multiply High Doubleword", rc
+   9 : mulhdu  rD, rA, rB                      : fullname = "Multiply High Doubleword Unsigned", rc
+  75 : mulhw   rD, rA, rB                      : fullname = "Multiply High Word", rc
+  11 : mulhwu  rD, rA, rB                      : fullname = "Multiply High Word Unsigned", rc
+ 233 : mulld   rD, rA, rB                      : fullname = "Multiply Low Doubleword", oe, rc
+ 235 : mullw   rD, rA, rB                      : fullname = "Multiply Low Word", oe, rc
+  31 : neg     rD, rA                          : fullname = "Negate", oe, rc
+ 247 : stbux   rS, rA, rB                      : fullname = "Store Byte with Update Indexed"
+ 215 : stbx    rS, rA, rB                      : fullname = "Store Byte Indexed"
+  40 : subf    rD, rA, rB                      : fullname = "Subtract From", oe, rc
+   8 : subfc   rD, rA, rB                      : fullname = "Subtract From Carrying", oe, rc
+ 136 : subfe   rD, rA, rB                      : fullname = "Subtract From Extended", oe, rc
+ 232 : subfme  rD, rA                          : fullname = "Subtract From Minus One Extended", oe, rc
+ 200 : subfze  rD, rA                          : fullname = "Subtract From Zero Extended", oe, rc
 
 [opcd = 59, xo2]
   21 : fadds   frD, frA, frB                   : fullname = "Floating Add Single", rc
@@ -214,6 +377,11 @@ rc = 31 : name = "name + 'o'"
   12 : frsp    frD, frB                        : fullname = "Floating Round to Single", rc
   22 : fsqrt   frD, frB                        : fullname = "Floating Square Root (Double-Precision)", rc
   20 : fsub    frD, frA, frB                   : fullname = "Floating Subtract (Double-Precision)", rc
+ 583 : mffs    frD                             : fullname = "Move from FPSCR", rc
+  70 : mtfsb0  crbD                            : fullname = "Move to FPSCR Bit 0", rc
+  38 : mtfsb1  crbD                            : fullname = "Move to FPSCR Bit 1", rc
+ 711 : mtfsf   fm, frB                         : fullname = "Move to FPSCR Fields", rc
+ 134 : mtfsfi  crfD, uimm                      : fullname = "Move to FPSCR Field Immediate", rc
 
 [opcd = 63, xo4]
   29 : fmadd   frD, frA, frC, frB              : fullname = "Floating Multiply-Add (Double-Precision)", rc
