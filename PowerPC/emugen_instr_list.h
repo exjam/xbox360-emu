@@ -81,6 +81,7 @@ enum InstructionList {
    fsubs = 20,
    icbi = 982,
    isync = 150,
+   krncall = 5,
    lbz = 34,
    lbzu = 35,
    lbzux = 119,

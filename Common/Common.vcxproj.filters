@@ -18,6 +18,9 @@
     <Filter Include="Header Files\util\be">
       <UniqueIdentifier>{2b96680f-5b2e-48e0-b681-39d8c0821d3a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\kernel">
+      <UniqueIdentifier>{19883f71-d2c4-456b-948a-8b9edbc2af49}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="util\be\inputstream.h">
@@ -40,6 +43,9 @@
     </ClInclude>
     <ClInclude Include="util\flags.h">
       <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="kernel.h">
+      <Filter>Header Files\kernel</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

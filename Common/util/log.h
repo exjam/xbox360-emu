@@ -10,9 +10,9 @@ class Log
 {
 public:
    struct hex {
-      hex(uint32_t number, uint32_t pad = 0) : number(number), pad(pad) {}
-      uint32_t number;
-      uint32_t pad;
+      hex(uint64_t number, uint64_t pad = 0) : number(number), pad(pad) {}
+      uint64_t number;
+      uint64_t pad;
    };
 
    struct bin {
@@ -22,25 +22,25 @@ public:
    };
 
 private:
-   class Debug
+   class Output
    {
    public:
-      Debug(bool newLine = true)
+      Output(const std::string &pre, bool newLine = true)
       {
          if (newLine) {
-            std::cout << std::endl << "[DEBUG] ";
+            std::cout << std::endl << pre << " ";
          }
       }
 
       template<typename T>
-      Debug& operator << (const T &val) 
+      Output& operator << (const T &val)
       {
          std::cout << val;
          return *this;
       }
 
       template<>
-      Debug& operator << (const Log::hex &val) 
+      Output& operator << (const Log::hex &val)
       {
          if (val.pad) {
             std::cout << std::hex << std::setfill('0') << std::setw(val.pad) << val.number;
@@ -53,7 +53,7 @@ private:
       }
 
       template<>
-      Debug& operator << (const Log::bin &val) 
+      Output& operator << (const Log::bin &val)
       {
          for (uint32_t i = 0; i < val.pad; ++i) {
             std::cout << ((val.number >> i) & 1);
@@ -66,9 +66,19 @@ private:
    };
 
 public:
-   Debug debug(bool newLine = true)
+   Output debug(bool newLine = true)
    {
-      return Debug(newLine);
+      return Output("[DEBUG]", newLine);
+   }
+
+   Output warning(bool newLine = true)
+   {
+      return Output("[WARNING]", newLine);
+   }
+
+   Output error(bool newLine = true)
+   {
+      return Output("[ERROR]", newLine);
    }
 
 private:
@@ -77,6 +87,11 @@ private:
 extern Log g_log;
 
 #define xDebug() g_log.debug()
+#define xWarning() g_log.warning()
+#define xError() g_log.error()
+
 #define xDebugInline() g_log.debug(false)
+#define xWarningInline() g_log.warning(false)
+#define xErrorInline() g_log.error(false)
 
 #endif // UTIL_LOG_H

@@ -20,10 +20,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="interpreterengine.cpp" />
+    <ClCompile Include="kernel.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="interpreterengine.h" />
+    <ClInclude Include="kernel.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{C68F7DE4-DD05-4BBF-94D4-F1697BF66EF3}</ProjectGuid>

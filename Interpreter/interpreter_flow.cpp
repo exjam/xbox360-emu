@@ -60,7 +60,11 @@ bool bcx(State *state, Instruction instr)
    }
 
    if ((instr.bo & NoCheckCond) == 0) {
-      cond_ok = (state->reg.cr.value & (1 << instr.bi)) == (instr.bo & CondValue);
+      if (instr.bo & CondValue) {
+         cond_ok = (state->reg.cr.value & (1 << instr.bi)) != 0;
+      } else {
+         cond_ok = (state->reg.cr.value & (1 << instr.bi)) == 0;
+      }
    }
 
    if (ctr_ok && cond_ok) {

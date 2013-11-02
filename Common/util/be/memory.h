@@ -26,15 +26,23 @@ public:
       memset(reinterpret_cast<void*>(address), 0, size);
    }
 
-   static inline uint64_t translate(uint64_t address)
+   template<typename Type>
+   static inline Type translate(Type address)
    {
-      return address & 0xFFFFFFFF;
+      return (Type)(((uint64_t)address) & 0xFFFFFFFF);
    }
 
    template<typename T>
    static inline T read(uint64_t address)
    {
+      assert(0);
       return *reinterpret_cast<T*>(translate(address));
+   }
+
+   template<>
+   static inline uint8_t read(uint64_t address)
+   {
+      return *reinterpret_cast<uint8_t*>(translate(address));
    }
 
    template<>
@@ -70,7 +78,14 @@ public:
    template<typename T>
    static inline void write(uint64_t address, const T &value)
    {
+      assert(0);
       *reinterpret_cast<T*>(translate(address)) = value;
+   }
+
+   template<>
+   static inline void write(uint64_t address, const uint8_t &value)
+   {
+      *reinterpret_cast<uint8_t*>(translate(address)) = value;
    }
 
    template<>

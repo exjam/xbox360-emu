@@ -24,6 +24,7 @@
     <ClCompile Include="interpreter_cpu.cpp" />
     <ClCompile Include="interpreter_flow.cpp" />
     <ClCompile Include="interpreter_fpu.cpp" />
+    <ClCompile Include="interpreter_kernel.cpp" />
     <ClCompile Include="interpreter_load.cpp" />
     <ClCompile Include="interpreter_mmu.cpp" />
     <ClCompile Include="interpreter_store.cpp" />
@@ -85,7 +86,7 @@
     <IncludePath>../PowerPC;../Common;.;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>../PowerPC;../Common;.;$(IncludePath)</IncludePath>
+    <IncludePath>../XexLoader;../PowerPC;../Common;.;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

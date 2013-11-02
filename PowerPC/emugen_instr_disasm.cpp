@@ -900,6 +900,17 @@ bool isync(State *state, Instruction instr)
    return true;
 }
 
+/* Kernel Function Call */
+bool krncall(State *state, Instruction instr)
+{
+   char buffer[64];
+   state->result.code = "krncall";
+   state->result.name = "Kernel Function Call";
+   sprintf_s(buffer, 64, "%u", instr.uimm);
+   state->result.operands = buffer;
+   return true;
+}
+
 /* Load Byte and Zero */
 bool lbz(State *state, Instruction instr)
 {

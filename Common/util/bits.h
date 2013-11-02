@@ -57,34 +57,82 @@ static inline unsigned long beScanForward(uint64_t value)
 }
 
 /* Swap between little endian and big endian */
-static inline uint8_t swap(uint8_t value)
+template <typename Type>
+static inline Type swap(Type value)
+{
+   union
+   {
+      Type value;
+      unsigned char u8[sizeof(Type)];
+   } source, dest;
+
+   source.value = value;
+
+   for (size_t k = 0; k < sizeof(Type); k++) {
+      dest.u8[k] = source.u8[sizeof(Type) - k - 1];
+   }
+
+   return dest.value;
+}
+
+template<>
+static inline unsigned char swap(unsigned char value)
 {
    return value;
 }
 
-static inline uint16_t swap(uint16_t value)
+template<>
+static inline unsigned short swap(unsigned short value)
 {
    return _byteswap_ushort(value);
 }
 
-static inline uint32_t swap(uint32_t value)
+template<>
+static inline unsigned int swap(unsigned int value)
 {
    return _byteswap_ulong(value);
 }
 
-static inline uint64_t swap(uint64_t value)
+template<>
+static inline unsigned long swap(unsigned long value)
+{
+   return _byteswap_ulong(value);
+}
+
+template<>
+static inline unsigned long long swap(unsigned long long value)
 {
    return _byteswap_uint64(value);
 }
 
+template<>
 static inline float swap(float value)
 {
-   return *reinterpret_cast<float*>(swap(*reinterpret_cast<uint32_t*>(&value)));
+   union
+   {
+      float fv;
+      uint32_t iv;
+   } u;
+
+   u.fv = value;
+   u.iv = swap(u.iv);
+
+   return u.fv;
 }
 
+template<>
 static inline double swap(double value)
 {
-   return *reinterpret_cast<double*>(swap(*reinterpret_cast<uint64_t*>(&value)));
+   union
+   {
+      double fv;
+      uint64_t iv;
+   } u;
+
+   u.fv = value;
+   u.iv = swap(u.iv);
+
+   return u.fv;
 }
 
 /* Generate a mask of bits size */

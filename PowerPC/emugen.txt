@@ -184,6 +184,7 @@ rc = 31 : name = "name + 'o'"
    3 : twi     to, rA, simm                    : fullname = "Trap Word Immediate"
   26 : xori    rA, rS, uimm                    : fullname = "XOR Immediate"
   27 : xoris   rA, rS, uimm                    : fullname = "XOR Immediate Shifted"
+   5 : krncall uimm                            : fullname = "Kernel Function Call"
 
 [opcd = 58, xo5]
    0 : ld      rD, ds(rA)                      : fullname = "Load Doubleword"

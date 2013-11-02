@@ -186,6 +186,7 @@ bool init()
 {
    __emugen_table_opcd[2] = tdi;
    __emugen_table_opcd[3] = twi;
+   __emugen_table_opcd[5] = krncall;
    __emugen_table_opcd[7] = mulli;
    __emugen_table_opcd[8] = subfic;
    __emugen_table_opcd[10] = cmpli;

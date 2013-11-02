@@ -2,12 +2,13 @@
 #define INTERPRETER_ENGINE_H
 
 #include <stdint.h>
+#include "xex/xex.h"
 
 class InterpreterEngine
 {
 public:
    InterpreterEngine();
-   bool run(uint32_t address);
+   bool run(xex::Binary &xex);
 
 private:
 };

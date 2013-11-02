@@ -144,6 +144,9 @@ struct ImageBaseAddress : public OptionalHeader
    uint32_t address;
 };
 
+using ImportHandle = void*;
+using LibraryHandle = void*;
+
 struct ImportLibrary : public OptionalHeader
 {
    struct Record {
@@ -151,10 +154,15 @@ struct ImportLibrary : public OptionalHeader
    };
 
    struct Import {
+      uint32_t address;
       uint32_t ordinal;
       uint32_t thunk;
+      uint32_t args;
+      std::string name;
+      ImportHandle handle;
    };
 
+   LibraryHandle handle;
    uint32_t unknown;
    uint8_t digest[20];
    uint32_t importId;
@@ -167,6 +175,12 @@ struct ImportLibrary : public OptionalHeader
 
 struct ImportLibraries : public OptionalHeader
 {
+   enum
+   {
+      ImportOrdinal = 0,
+      ImportThunk = 1,
+   };
+
    static const Headers id = Headers::ImportLibraries;
 
    std::vector<ImportLibrary> libraries;

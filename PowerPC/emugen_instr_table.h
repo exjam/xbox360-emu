@@ -83,6 +83,7 @@ bool fsub(State *state, Instruction instr);
 bool fsubs(State *state, Instruction instr);
 bool icbi(State *state, Instruction instr);
 bool isync(State *state, Instruction instr);
+bool krncall(State *state, Instruction instr);
 bool lbz(State *state, Instruction instr);
 bool lbzu(State *state, Instruction instr);
 bool lbzux(State *state, Instruction instr);

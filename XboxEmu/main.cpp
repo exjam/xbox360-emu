@@ -10,12 +10,14 @@
 #include <windows.h>
 
 #include "xex/xex.h"
+#include "kernel.h"
 
 #include "interpreterengine.h"
 
 int main(int argc, char** argv)
 {
    xex::Loader test;
+   xex::Binary binary;
    std::ifstream file;
 
    /* Totally legal copy of the game. */
@@ -25,12 +27,14 @@ int main(int argc, char** argv)
       return false;
    }
 
-   test.load(file);
+   test.load(file, binary);
 
    file.close();
 
+   loadBinary(binary);
+
    InterpreterEngine engine;
-   engine.run(0x82F23470);
+   engine.run(binary);
 
    /*
    _byteswap_ushort()
