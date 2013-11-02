@@ -1,0 +1,4 @@
+102 : KeGetCurrentProcessType : 0
+204 : NtAllocateVirtualMemory : 5
+403 : XexExecutableModuleHandle
+405 : XexGetModuleHandle : 2

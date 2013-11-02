@@ -1,0 +1,6 @@
+LIBRARY xboxkrnl
+EXPORTS
+ KeGetCurrentProcessType @ 102
+ NtAllocateVirtualMemory @ 204
+ XexExecutableModuleHandle @ 403
+ XexGetModuleHandle @ 405
