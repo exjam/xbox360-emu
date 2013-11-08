@@ -213,7 +213,7 @@ bool fcmp(State *state, Instruction instr)
    }
 
    state->reg.fpscr.fprf = flags;
-   crn(instr.crfD) = flags;
+   crf(instr.crfD) = flags;
    
    if (fpu::isSignalingNaN(a) || fpu::isSignalingNaN(b)) {
       state->reg.fpscr.vxsnan = 1;
@@ -719,7 +719,7 @@ bool fsubs(State *state, Instruction instr)
 /* Move to Condition Register from FPSCR */
 bool mcrfs(State *state, Instruction instr)
 {
-   crn(instr.crfD) = fpscr(instr.crfS);
+   crf(instr.crfD) = fpscr(instr.crfS);
 
    switch (instr.crfS) {
    case 0:

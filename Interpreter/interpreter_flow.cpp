@@ -154,7 +154,7 @@ bool cmpx(State *state, Instruction instr)
    }
 
    flags |= state->reg.xer.so;
-   crn(instr.crfD) = flags;
+   crf(instr.crfD) = flags;
 
    return true;
 }
@@ -186,72 +186,72 @@ bool cmpli(State *state, Instruction instr)
 /* Condition Register AND */
 bool crand(State *state, Instruction instr)
 {
-   auto a = crn(instr.crbA);
-   auto b = crn(instr.crbB);
-   crn(instr.crbD) = a & b;
+   auto a = crb(instr.crbA);
+   auto b = crb(instr.crbB);
+   crb(instr.crbD) = a & b;
    return true;
 }
 
 /* Condition Register AND with Complement */
 bool crandc(State *state, Instruction instr)
 {
-   auto a = crn(instr.crbA);
-   auto b = crn(instr.crbB);
-   crn(instr.crbD) = a & ~b;
+   auto a = crb(instr.crbA);
+   auto b = crb(instr.crbB);
+   crb(instr.crbD) = a & ~b;
    return true;
 }
 
 /* Condition Register Equivalent */
 bool creqv(State *state, Instruction instr)
 {
-   auto a = crn(instr.crbA);
-   auto b = crn(instr.crbB);
-   crn(instr.crbD) = ~(a ^ b);
+   auto a = crb(instr.crbA);
+   auto b = crb(instr.crbB);
+   crb(instr.crbD) = ~(a ^ b);
    return true;
 }
 
 /* Condition Register NAND */
 bool crnand(State *state, Instruction instr)
 {
-   auto a = crn(instr.crbA);
-   auto b = crn(instr.crbB);
-   crn(instr.crbD) = ~(a & b);
+   auto a = crb(instr.crbA);
+   auto b = crb(instr.crbB);
+   crb(instr.crbD) = ~(a & b);
    return true;
 }
 
 /* Condition Register NOR */
 bool crnor(State *state, Instruction instr)
 {
-   auto a = crn(instr.crbA);
-   auto b = crn(instr.crbB);
-   crn(instr.crbD) = ~(a | b);
+   auto a = crb(instr.crbA);
+   auto b = crb(instr.crbB);
+   crb(instr.crbD) = ~(a | b);
    return true;
 }
 
 /* Condition Register OR */
 bool cror(State *state, Instruction instr)
 {
-   auto a = crn(instr.crbA);
-   auto b = crn(instr.crbB);
-   crn(instr.crbD) = a | b;
+   auto a = crb(instr.crbA);
+   auto b = crb(instr.crbB);
+   crb(instr.crbD) = a | b;
    return true;
 }
 
 /* Condition Register OR with Complement */
 bool crorc(State *state, Instruction instr)
 {
-   auto a = crn(instr.crbA);
-   auto b = crn(instr.crbB);
-   crn(instr.crbD) = a | ~b;
+   auto a = crb(instr.crbA);
+   auto b = crb(instr.crbB);
+   crb(instr.crbD) = a | ~b;
    return true;
 }
 
 /* Condition Register XOR */
 bool crxor(State *state, Instruction instr)
 {
-   auto a = crn(instr.crbA);
-   auto b = crn(instr.crbB);
-   crn(instr.crbD) = a ^ b;
+   auto a = crb(instr.crbA);
+   auto b = crb(instr.crbB);
+   crb(instr.crbD) = a ^ b;
    return true;
 }
 

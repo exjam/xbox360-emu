@@ -17,9 +17,10 @@ namespace Interpreter
 #define gprsw(r) reinterpret<int32_t>(state->reg.gpr[r])
 
 #define fpr(id) state->reg.fpr[id]
-#define fpscr(n) bits::field<uint32_t>(state->reg.fpscr.value, n * 4, n)
+#define fpscr(n) bits::field<uint32_t>(state->reg.fpscr.value, n * 4, 4)
 
-#define crn(n) bits::field<uint32_t>(state->reg.cr.value, n * 4, n)
+#define crf(n) bits::field<uint32_t>(state->reg.cr.value, n * 4, 4)
+#define crb(n) bits::field<uint32_t>(state->reg.cr.value, n, 1)
 
 template<typename DstType, typename SrcType>
 static inline DstType& reinterpret(SrcType& value)

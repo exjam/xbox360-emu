@@ -2,7 +2,6 @@
 #define PPC_INTERPRETER_H
 
 #include "ppc/cpu.h"
-#include "xex/xex.h"
 
 namespace ppc
 {

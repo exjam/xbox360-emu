@@ -111,7 +111,7 @@ bool raise(State *state, ppc::Exceptions exception)
 /* Move Condition Register Field */
 bool mcrf(State *state, Instruction instr)
 {
-   crn(instr.crfD) = crn(instr.crfS);
+   crf(instr.crfD) = crf(instr.crfS);
    return true;
 }
 

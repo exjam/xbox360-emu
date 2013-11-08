@@ -7,6 +7,8 @@
 
 #include "common.h"
 
+#include "xex/xex.h"
+
 #include <functional>
 
 namespace ppc 
