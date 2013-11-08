@@ -66,6 +66,11 @@ private:
    };
 
 public:
+   Output custom(const std::string &pre, bool newLine = true)
+   {
+      return Output(pre, newLine);
+   }
+
    Output debug(bool newLine = true)
    {
       return Output("[DEBUG]", newLine);

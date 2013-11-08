@@ -205,9 +205,9 @@ int count()
 }
 
 template<typename SrcType, int Start = 0, int Size = 0>
-struct field
+struct field_t
 {
-   field(SrcType &value) :
+   field_t(SrcType &value) :
       value(value)
    {
    }
@@ -217,7 +217,7 @@ struct field
       return (value >> Start) & bits::mask<SrcType>(Size);
    }
 
-   field &operator=(const SrcType &v)
+   field_t &operator=(const SrcType &v)
    {
       auto mask = bits::mask<SrcType>(Size);
       value &= ~(mask << Start);
@@ -226,7 +226,7 @@ struct field
    }
 
    template<typename Type, int Start, int Size>
-   field &operator=(const field<Type, Start, Size> &o)
+   field_t &operator=(const field_t<Type, Start, Size> &o)
    {
       (*this) = static_cast<SrcType>(static_cast<Type>(o));
       return *this;
@@ -236,10 +236,10 @@ struct field
 };
 
 template<typename SrcType>
-struct field<SrcType, 0, 0>
+struct field
 {
-   field(SrcType &value, int start, int size) :
-      value(value), start(start), size(size)
+   field(SrcType &value, int start_, int size_) :
+      value(value), start(start_), size(size_)
    {
    }
 
@@ -256,8 +256,8 @@ struct field<SrcType, 0, 0>
       return *this;
    }
 
-   template<typename Type, int Start, int Size>
-   field &operator=(const field<Type, Start, Size> &o)
+   template<typename Type>
+   field &operator=(const field<Type> &o)
    {
       (*this) = static_cast<SrcType>(static_cast<Type>(o));
       return *this;
@@ -269,19 +269,19 @@ struct field<SrcType, 0, 0>
 };
 
 template<typename SrcType, int Start_, int End_>
-struct range : public field<SrcType, Start_ < End_ ? Start_ : End_, Start_ < End_ ? 1 + End_ - Start_ : 1 + Start_ - End_>
+struct range : public field_t<SrcType, Start_ < End_ ? Start_ : End_, Start_ < End_ ? 1 + End_ - Start_ : 1 + Start_ - End_>
 {
    static const int Start = Start_ < End_ ? Start_ : End_;
    static const int Size = Start_ < End_ ? 1 + End_ - Start_ : 1 + Start_ - End_;
 
    range(SrcType &value) :
-      field(value)
+      field_t(value)
    {
    }
 
    range &operator=(const SrcType& v)
    {
-      field<SrcType, Start, Size> &self = *this;
+      field_t<SrcType, Start, Size> &self = *this;
       self = v;
       return *this;
    }

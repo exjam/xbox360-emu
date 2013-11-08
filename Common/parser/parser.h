@@ -1,5 +1,5 @@
-#ifndef PARSER_H
-#define PARSER_H
+#ifndef __LIB_PARSER_H
+#define __LIB_PARSER_H
 
 /*
  * Expression template parser combinator, AKA, C++ is love, C++ is magic
@@ -596,4 +596,4 @@ not_parser<Check> operator!(parser<Check> const &check)
    return not_parser<Check>(check.derived());
 }
 
-#endif // ifdef PARSER_H
+#endif // ifndef __LIB_PARSER_H
