@@ -43,6 +43,8 @@ enum class Headers
    ExportsByName              = 0xE104,
 };
 
+#pragma pack(push, 1)
+
 struct OptionalHeader {
    OptionalHeader() : _read(false) {}
    bool _read;
@@ -358,6 +360,8 @@ struct AlternateTitleIds : public OptionalHeader
 
 struct AdditionalTitleMemory : public OptionalHeader { static const Headers id = Headers::AdditionalTitleMemory; };
 struct ExportsByName : public OptionalHeader { static const Headers id = Headers::ExportsByName; };
+
+#pragma pack(pop)
 
 } // namespace xex
 

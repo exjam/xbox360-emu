@@ -1,6 +1,23 @@
 LIBRARY xboxkrnl
 EXPORTS
+ ExCreateThread @ 13
+ KeDebugMonitorData @ 89
  KeGetCurrentProcessType @ 102
  NtAllocateVirtualMemory @ 204
+ RtlEnterCriticalSection @ 293
+ RtlImageXexHeaderField @ 299
+ RtlInitializeCriticalSection @ 302
+ RtlInitializeCriticalSectionAndSpinCount @ 303
+ RtlLeaveCriticalSection @ 304
+ RtlTryEnterCriticalSection @ 321
+ KeTlsAlloc @ 338
+ KeTlsFree @ 339
+ KeTlsGetValue @ 340
+ KeTlsSetValue @ 341
+ XboxHardwareInfo @ 342
+ XboxKrnlBaseVersion @ 343
+ XboxKrnlVersion @ 344
  XexExecutableModuleHandle @ 403
+ XexCheckExecutablePrivilege @ 404
  XexGetModuleHandle @ 405
+ EmuInitKernel @ 1000

@@ -70,7 +70,7 @@
     <IncludePath>../../Common/;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>../../Common/;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)/Common/;$(SolutionDir)/XexLoader;$(IncludePath)</IncludePath>
     <LibraryPath>$(OutDir);$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -147,11 +147,19 @@
   <ItemGroup>
     <ClCompile Include="ke.cpp" />
     <ClCompile Include="nt.cpp" />
+    <ClCompile Include="rtl.cpp" />
+    <ClCompile Include="thread.cpp" />
+    <ClCompile Include="xbox.cpp" />
+    <ClCompile Include="xboxkrnl.cpp" />
     <ClCompile Include="xex.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ke.h" />
     <ClInclude Include="nt.h" />
+    <ClInclude Include="rtl.h" />
+    <ClInclude Include="thread.h" />
+    <ClInclude Include="xbox.h" />
+    <ClInclude Include="xboxkrnl.h" />
     <ClInclude Include="xex.h" />
   </ItemGroup>
   <ItemGroup>

@@ -1,36 +1,38 @@
 #include "nt.h"
-#include "util/be/memory.h"
-#include "util/log.h"
 
-XBXKRNL NTSTATUS
-NtAllocateVirtualMemory(PVOID *pBaseAddress, PSIZE_T pRegionSize, ULONG AllocationType, ULONG Protect, ULONG Flags)
+#include <util/be/memory.h>
+#include <util/log.h>
+#include <winternl.h>
+
+XBXKRNL XNTSTATUS
+NtAllocateVirtualMemory(XLPDWORD lpBaseAddress,
+                        XLPDWORD lpRegionSize,
+                        XDWORD dwAllocationType,
+                        XDWORD dwProtect,
+                        XDWORD dwFlags)
 {
-   uint32_t RegionSize = 0;
-   PVOID BaseAddress = 0;
+   XDWORD RegionSize = 0;
+   XDWORD BaseAddress = 0;
+   XDWORD result;
 
-   if (pRegionSize) {
-      RegionSize = be::Memory::read<uint32_t>(reinterpret_cast<uint64_t>(pRegionSize));
-   }
-
-   if (pBaseAddress) {
-      BaseAddress = reinterpret_cast<PVOID>(be::Memory::read<uint32_t>(reinterpret_cast<uint64_t>(pBaseAddress)));
-   }
-
-   BaseAddress = be::Memory::translate(BaseAddress);
-
+   swapField(lpRegionSize, &RegionSize);
+   swapField(lpBaseAddress, &BaseAddress);
+   
    xDebug()
       << "NtAllocateVirtualMemory("
-      << Log::hex(reinterpret_cast<uint64_t>(BaseAddress)) << ", "
+      << Log::hex(BaseAddress) << ", "
       << Log::hex(RegionSize) << ", "
-      << Log::hex(AllocationType) << ", "
-      << Log::hex(Protect) << ", "
-      << Log::hex(Flags) << ")";
+      << Log::hex(dwAllocationType) << ", "
+      << Log::hex(dwProtect) << ", "
+      << Log::hex(dwFlags) << ")";
 
-   auto va = VirtualAlloc(BaseAddress, RegionSize, AllocationType & 0xFFFF, Protect);
+   result = reinterpret_cast<XDWORD>(
+               VirtualAlloc(reinterpret_cast<LPVOID>(BaseAddress),
+                           RegionSize,
+                           dwAllocationType & 0xFFFF,
+                           dwProtect));
 
-   if (va) {
-      be::Memory::write<uint32_t>(reinterpret_cast<uint64_t>(pBaseAddress), reinterpret_cast<uint32_t>(va));
-   }
+   swapField(&result, lpBaseAddress);
 
-   return va != 0;
+   return (result != 0) ? XSTATUS_SUCCESS : XSTATUS_NO_MEMORY;
 }

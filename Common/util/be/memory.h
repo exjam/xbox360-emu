@@ -44,10 +44,22 @@ public:
       return bits::swap(*reinterpret_cast<T*>(translate(address)));
    }
 
+   template<typename PointedType>
+   static inline PointedType read(PointedType *address)
+   {
+      return read<PointedType>(reinterpret_cast<uint64_t>(address));
+   }
+
    template<typename T>
    static inline void write(uint64_t address, const T &value)
    {
       *reinterpret_cast<T*>(translate(address)) = bits::swap<T>(value);
+   }
+
+   template<typename PointedType>
+   static inline void write(PointedType * address, const PointedType &value)
+   {
+      return write<PointedType>(reinterpret_cast<uint64_t>(address), value);
    }
    
 private:

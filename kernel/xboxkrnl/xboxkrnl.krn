@@ -1,4 +1,21 @@
+89 : KeDebugMonitorData
 102 : KeGetCurrentProcessType : 0
+338 : KeTlsAlloc : 0
+339 : KeTlsFree : 1
+340 : KeTlsGetValue : 1
+341 : KeTlsSetValue : 2
 204 : NtAllocateVirtualMemory : 5
+302 : RtlInitializeCriticalSection : 1
+303 : RtlInitializeCriticalSectionAndSpinCount : 2
+321 : RtlTryEnterCriticalSection : 1
+293 : RtlEnterCriticalSection : 1
+304 : RtlLeaveCriticalSection : 1
+13 : ExCreateThread : 7
+342 : XboxHardwareInfo
+344 : XboxKrnlVersion
+343 : XboxKrnlBaseVersion
+1000 : EmuInitKernel : 1
 403 : XexExecutableModuleHandle
 405 : XexGetModuleHandle : 2
+404 : XexCheckExecutablePrivilege : 1
+299 : RtlImageXexHeaderField : 2

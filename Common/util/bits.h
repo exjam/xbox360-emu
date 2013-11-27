@@ -60,19 +60,17 @@ static inline unsigned long beScanForward(uint64_t value)
 template <typename Type>
 static inline Type swap(Type value)
 {
-   union
-   {
-      Type value;
-      unsigned char u8[sizeof(Type)];
-   } source, dest;
+   uint8_t *src, *dst;
+   Type result;
 
-   source.value = value;
-
+   src = reinterpret_cast<uint8_t *>(&value);
+   dst = reinterpret_cast<uint8_t *>(&result);
+   
    for (size_t k = 0; k < sizeof(Type); k++) {
-      dest.u8[k] = source.u8[sizeof(Type) - k - 1];
+      dst[k] = src[sizeof(Type) - k - 1];
    }
 
-   return dest.value;
+   return result;
 }
 
 template<>
@@ -194,7 +192,7 @@ static inline DstType signExtend(DstType v)
 template<int width, typename DstType>
 static inline DstType zeroExtend(DstType v)
 {
-   return v  & (static_cast<DstType>(1) << width);
+   return v  & ((static_cast<DstType>(1) << width) - 1);
 }
 
 /* Number of bits in a type */

@@ -1,5 +1,5 @@
-#ifndef XEX_H
-#define XEX_H
+#ifndef XEXLOADER_XEX_H
+#define XEXLOADER_XEX_H
 
 #include <stdint.h>
 #include <istream>
@@ -16,6 +16,8 @@
 namespace xex
 {
    
+#pragma pack(push, 1)
+
 union ImageFlags
 {
    uint32_t _flags;
@@ -213,6 +215,8 @@ struct PeSection
    uint32_t size;
    uint32_t flags;
 };
+
+#pragma pack(pop)
 
 struct Binary
 {

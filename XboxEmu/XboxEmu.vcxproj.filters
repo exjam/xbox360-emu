@@ -11,10 +11,13 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="interpreterengine.cpp">
+    <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="main.cpp">
+    <ClCompile Include="system.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="imports.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="kernel.cpp">
@@ -22,10 +25,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="interpreterengine.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="kernel.h">
+    <ClInclude Include="system.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

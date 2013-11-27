@@ -1,45 +1,20 @@
-#include <stdint.h>
-#include <stdlib.h>
-#include <iostream>
-#include <vector>
-#include <map>
-#include <string>
-#include <fstream>
-#include <iomanip>
-#include <assert.h>
-#include <windows.h>
-
-#include "xex/xex.h"
-#include "kernel.h"
-
-#include "interpreterengine.h"
+#include "system.h"
+#include <util/log.h>
 
 int main(int argc, char** argv)
 {
-   xex::Loader test;
-   xex::Binary binary;
-   std::ifstream file;
-
-   /* Totally legal copy of the game. */
-   file.open(L"D:\\Downloads\\Ultimate_Marvel_vs_Capcom_3_RF_XBOX360\\Default.xex", std::ifstream::in | std::ifstream::binary);
-
-   if (!file.is_open()) {
-      return false;
+   if (argc < 2) {
+      xDebug() << "Usage: " << argv[0] << " <.xex file>";
+      return -1;
    }
 
-   test.load(file, binary);
+   System emu;
 
-   file.close();
+   /* Totally legal copy of the game. */
+   if (!emu.load(argv[1])) {
+      return 0;
+   }
 
-   loadBinary(binary);
-
-   InterpreterEngine engine;
-   engine.run(binary);
-
-   /*
-   _byteswap_ushort()
-   _byteswap_ulong()
-   _byteswap_uint64()
-   */
+   emu.start();
    return 0;
 }

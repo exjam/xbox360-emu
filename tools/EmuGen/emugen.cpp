@@ -135,13 +135,6 @@ bool EmuGen::createInstructionList(const std::string &path)
       }
    }
 
-   /* map is already sorted
-   std::sort(m_instructionList.begin(),
-             m_instructionList.end(),
-             [](ast_opcd_def *lhs, ast_opcd_def *rhs) {
-                return lhs->disasm.name.value < rhs->disasm.name.value;
-             });*/
-
    out << "enum InstructionList {" << std::endl;
 
    for (auto &instr : m_instructionList) {
