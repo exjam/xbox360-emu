@@ -33,10 +33,10 @@ bool lxx(State *state, Instruction instr)
    ppc::reg_t ea;
    SrcType value;
 
-   if (Flags & LoadDS) {
-      ea = bits::signExtend<16>(static_cast<uint64_t>(instr.ds) << 2);
-   } else if (Flags & LoadIndexed) {
+   if (Flags & LoadIndexed) {
       ea = gpr(instr.rB);
+   } else if (Flags & LoadDS) {
+      ea = bits::signExtend<16>(static_cast<uint64_t>(instr.ds) << 2);
    } else {
       ea = bits::signExtend<16, uint64_t>(instr.d);
    }
@@ -58,10 +58,10 @@ bool lxx(State *state, Instruction instr)
    if (Flags & LoadFpu) {
       fpr(instr.frD) = static_cast<ppc::freg_t>(value);
    } else {
-      if (Flags & LoadZeroExtend) {
-         gpr(instr.rD) = value;
-      } else if (Flags & LoadSignExtend) {
+      if (Flags & LoadSignExtend) {
          gpr(instr.rD) = bits::signExtend<sizeof(SrcType)* 8, ppc::reg_t>(value);
+      } else {
+         gpr(instr.rD) = value;
       }
    }
 
@@ -121,13 +121,13 @@ bool ldu(State *state, Instruction instr)
 /* Load Double with Update Indexed */
 bool ldux(State *state, Instruction instr)
 {
-   return lxx<uint64_t, LoadDS | LoadUpdate | LoadIndexed>(state, instr);
+   return lxx<uint64_t, LoadUpdate | LoadIndexed>(state, instr);
 }
 
 /* Load Double Indexed */
 bool ldx(State *state, Instruction instr)
 {
-   return lxx<uint64_t, LoadDS | LoadIndexed>(state, instr);
+   return lxx<uint64_t, LoadIndexed>(state, instr);
 }
 
 /* Load Floating-Point Double */

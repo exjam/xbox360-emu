@@ -69,7 +69,7 @@ bool bcx(State *state, Instruction instr)
 
    if (ctr_ok && cond_ok) {
       if (Flags & BcxBranchCtr) {
-         state->nia = state->reg.ctr << 2;
+         state->nia = state->reg.ctr & ~0x3;
       } else if (Flags & BcxBranchLr) {
          state->nia = state->reg.lr & 0xFFFFFFFC;
       } else {
@@ -121,9 +121,9 @@ bool cmpx(State *state, Instruction instr)
 
    if (instr.l == 0) {
       if (std::numeric_limits<Type>::is_signed) {
-         a = bits::signExtend<32>(gpr(instr.rA));
+         a = bits::signExtend<32, Type>(gpr(instr.rA));
       } else {
-         a = bits::zeroExtend<32>(gpr(instr.rA));
+         a = bits::zeroExtend<32, Type>(gpr(instr.rA));
       }
    } else {
       a = static_cast<Type>(gpr(instr.rA));
@@ -131,15 +131,15 @@ bool cmpx(State *state, Instruction instr)
 
    if (Flags & CmpxImmediate) {
       if (std::numeric_limits<Type>::is_signed) {
-         b = bits::signExtend<16>(instr.simm);
+         b = bits::signExtend<16, Type>(instr.simm);
       } else {
          b = instr.uimm;
       }
    } else if (instr.l == 0) {
       if (std::numeric_limits<Type>::is_signed) {
-         b = bits::signExtend<32>(gpr(instr.rB));
+         b = bits::signExtend<32, Type>(gpr(instr.rB));
       } else {
-         b = bits::zeroExtend<32>(gpr(instr.rB));
+         b = bits::zeroExtend<32, Type>(gpr(instr.rB));
       }
    } else {
       b = static_cast<Type>(gpr(instr.rB));

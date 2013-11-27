@@ -42,7 +42,6 @@ bool stxx(State *state, Instruction instr)
 
    if (Flags & StoreUpdate) {
       ea += gpr(instr.rA);
-      gpr(instr.rA) = ea;
    } else {
       ea += gpr0(instr.rA);
    }
@@ -76,6 +75,11 @@ bool stxx(State *state, Instruction instr)
    }
 
    be::Memory::write<DstType>(ea, value);
+
+   if (Flags & StoreUpdate) {
+      gpr(instr.rA) = ea;
+   }
+
    return true;
 }
 
