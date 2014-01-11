@@ -1,7 +1,7 @@
 #include "rtl.h"
 
 #include <Windows.h>
-#include <util/be/memory.h>
+#include <util/memory.h>
 
 XBXKRNL XVOID
 RtlInitializeCriticalSection(XLPCRITICAL_SECTION lpCriticalSection)

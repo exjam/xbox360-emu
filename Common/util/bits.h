@@ -157,7 +157,7 @@ Type mask(int start, int end)
 
 /* Get a bit */
 template<typename Type>
-int get(Type value, uint32_t bit)
+int get(Type value, unsigned bit)
 {
    const uint8_t *bytes = reinterpret_cast<uint8_t*>(&value);
    return (bytes[bit / 8] >> (bit % 8)) & 1;
@@ -165,7 +165,7 @@ int get(Type value, uint32_t bit)
 
 /* Set a bit to 1 */
 template<typename Type>
-Type set(Type value, uint32_t bit)
+Type set(Type value, unsigned bit)
 {
    uint8_t *bytes = reinterpret_cast<uint8_t*>(&value);
    bytes[bit / 8] |= 1 << (bit % 8);
@@ -174,7 +174,7 @@ Type set(Type value, uint32_t bit)
 
 /* Set a bit to 0 */
 template<typename Type>
-Type clear(Type value, uint32_t bit)
+Type clear(Type value, unsigned bit)
 {
    uint8_t *bytes = reinterpret_cast<uint8_t*>(&value);
    bytes[bit / 8] &= ~(1 << (bit % 8));

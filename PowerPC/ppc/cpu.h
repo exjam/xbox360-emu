@@ -230,7 +230,7 @@ struct SlbEntry
 struct Registers
 {
    /* User Model UISA */
-   reg_t gpr[32]; /* 32 General Purpose Registers */
+   reg_t gpr[32];    /* 32 General Purpose Registers */
    freg_t fpr[32];   /* 32 Floating Point Registers */
    Cr cr;            /* Condition Register 8x 4bit cr0-cr7 */
    Fpscr fpscr;      /* Floating Point Status & Control Register */
@@ -456,7 +456,7 @@ struct Registers
       }
    }
 };
-
+#if 0
 /* Instructions are loaded from memory and thus are in Big Endian format*/
 struct Instruction
 {
@@ -669,6 +669,9 @@ struct Instruction
       };
    };
 };
+#endif
+
+#include <emugen_cpu_info.h>
 
 } // namespace ppc
 

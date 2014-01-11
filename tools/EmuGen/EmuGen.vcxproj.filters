@@ -32,5 +32,8 @@
     <ClInclude Include="emugen.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="emugen_types.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

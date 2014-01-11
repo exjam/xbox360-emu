@@ -5,7 +5,7 @@
 #include <ppc/disassembler.h>
 
 #include <util/log.h>
-#include <util/be/memory.h>
+#include <util/memory.h>
 #include <fstream>
 
 System::System()
@@ -31,9 +31,6 @@ bool System::load(const std::string &path)
       xDebug() << "Could not resolve init kernel for " << path;
       return false;
    }
-
-   ppc::Interpreter::init();
-   ppc::Disassembler::init();
 
    return true;
 }
@@ -85,11 +82,16 @@ void System::resumeThread(Thread *thread)
 
    state = reinterpret_cast<ppc::Interpreter::State *>(thread->state);
 
-   for (uint32_t i = 0; i < 99999; ++i) {
+   FILE* fh;
+   fopen_s(&fh, "out.txt", "w");
+
+   analyse(state->cia);
+
+   for (unsigned i = 0; i < 99999; ++i) {
       ppc::Disassembler::State dis;
 
       dis.cia = state->cia;
-      ins.value = be::Memory::read<uint32_t>(state->cia);
+      ins.value = Memory::read<uint32_t>(state->cia);
 
       ppc::Disassembler::decode(&dis, ins);
 
@@ -99,6 +101,12 @@ void System::resumeThread(Thread *thread)
          << " " << dis.result.operands;
 
       ppc::Interpreter::decode(state, ins);
+
+
+      if (state->nia != state->cia + 4) {
+         fprintf(fh, "%08X branch to %08X\n", state->cia, state->nia);
+         xDebug() << "BRANCH";
+      }
 
       state->cia = state->nia;
       state->nia = state->cia + 4;

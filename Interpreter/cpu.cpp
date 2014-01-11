@@ -1,13 +1,7 @@
 #include "ppc/interpreter.h"
-#include "ppc/instructions.h"
-
-#include "util/log.h"
-#include "util/bits.h"
-#include "util/be/memory.h"
-
 #include "common.h"
 
-#include <limits>
+#include <util/bits.h>
 
 namespace ppc 
 {

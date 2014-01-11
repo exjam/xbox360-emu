@@ -1,11 +1,11 @@
 #include "ppc/interpreter.h"
-#include "ppc/instructions.h"
-
-#include "util/log.h"
-#include "util/bits.h"
-#include "util/be/memory.h"
-
 #include "common.h"
+
+#include <ppc/instructions.h>
+
+#include <util/log.h>
+#include <util/bits.h>
+#include <util/memory.h>
 
 #include <limits>
 
@@ -49,7 +49,7 @@ bool lxx(State *state, Instruction instr)
    }
 
    #pragma warning(suppress: 4244)
-   value = be::Memory::read<SrcType>(ea);
+   value = Memory::read<SrcType>(ea);
 
    if (Flags & LoadReversed) {
       value = bits::swap(value);
@@ -243,7 +243,7 @@ bool lmw(State *state, Instruction instr)
    }
 
    for (auto i = instr.rD; i <= 31; ++i) {
-      gpr(i) = be::Memory::read<uint32_t>(ea);
+      gpr(i) = Memory::read<uint32_t>(ea);
       ea += 4;
    }
 
@@ -262,7 +262,7 @@ bool lsw(State *state, Instruction instr, uint64_t ea, uint64_t n)
          gpr(r) = 0;
       }
 
-      gpr(r) |= be::Memory::read<uint8_t>(ea) << (24 - i);
+      gpr(r) |= Memory::read<uint8_t>(ea) << (24 - i);
       i += 8;
 
       if (i == 64) {

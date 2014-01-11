@@ -133,16 +133,16 @@ struct XLP
 };
 #pragma pack(pop)
 
-using XPVOID      = XVOID *;
+using XPVOID   = XVOID *;
 
-using XLPVOID     = XLP<XVOID>;
-using XLPCHAR     = XLP<XCHAR>;
-using XLPBYTE     = XLP<XBYTE>;
-using XLPSHORT    = XLP<XSHORT>;
-using XLPINT      = XLP<XINT>;
-using XLPBOOL     = XLP<XBOOL>;
-using XLPWORD     = XLP<XWORD>;
-using XLPDWORD    = XLP<XDWORD>;
+using XLPVOID  = XLP<XVOID>;
+using XLPCHAR  = XLP<XCHAR>;
+using XLPBYTE  = XLP<XBYTE>;
+using XLPSHORT = XLP<XSHORT>;
+using XLPINT   = XLP<XINT>;
+using XLPBOOL  = XLP<XBOOL>;
+using XLPWORD  = XLP<XWORD>;
+using XLPDWORD = XLP<XDWORD>;
 
 using XNCALLER_TYPE = XDWORD;
 using XHANDLE       = XLPVOID;

@@ -1,5 +1,3 @@
-extern bool init();
-extern bool decode(State *state, Instruction instr);
 
 bool add(State *state, Instruction instr);
 bool addc(State *state, Instruction instr);
@@ -163,6 +161,7 @@ bool rldcr(State *state, Instruction instr);
 bool rldic(State *state, Instruction instr);
 bool rldicl(State *state, Instruction instr);
 bool rldicr(State *state, Instruction instr);
+bool rldimi(State *state, Instruction instr);
 bool rlwimi(State *state, Instruction instr);
 bool rlwinm(State *state, Instruction instr);
 bool rlwnm(State *state, Instruction instr);

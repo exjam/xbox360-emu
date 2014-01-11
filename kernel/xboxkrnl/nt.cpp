@@ -1,8 +1,8 @@
 #include "nt.h"
 
-#include <util/be/memory.h>
 #include <util/log.h>
 #include <winternl.h>
+#include <Windows.h>
 
 XBXKRNL XNTSTATUS
 NtAllocateVirtualMemory(XLPDWORD lpBaseAddress,

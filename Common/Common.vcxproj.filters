@@ -15,23 +15,14 @@
     <Filter Include="Header Files\parser">
       <UniqueIdentifier>{0550c772-ca32-49ed-bf44-17886a5d13cc}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\util\be">
-      <UniqueIdentifier>{2b96680f-5b2e-48e0-b681-39d8c0821d3a}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\kernel">
       <UniqueIdentifier>{19883f71-d2c4-456b-948a-8b9edbc2af49}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\emugen">
+      <UniqueIdentifier>{f32b3980-d934-47ec-b72c-9e6e27371aa9}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="util\be\inputstream.h">
-      <Filter>Header Files\util\be</Filter>
-    </ClInclude>
-    <ClInclude Include="util\be\memory.h">
-      <Filter>Header Files\util\be</Filter>
-    </ClInclude>
-    <ClInclude Include="util\bits.h">
-      <Filter>Header Files\util</Filter>
-    </ClInclude>
     <ClInclude Include="util\log.h">
       <Filter>Header Files\util</Filter>
     </ClInclude>
@@ -46,6 +37,21 @@
     </ClInclude>
     <ClInclude Include="kernel.h">
       <Filter>Header Files\kernel</Filter>
+    </ClInclude>
+    <ClInclude Include="emugen_types.h">
+      <Filter>Header Files\emugen</Filter>
+    </ClInclude>
+    <ClInclude Include="util\betype.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="util\bits.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="util\memory.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="util\biginputstream.h">
+      <Filter>Header Files\util</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

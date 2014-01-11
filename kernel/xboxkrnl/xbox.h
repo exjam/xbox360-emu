@@ -2,26 +2,27 @@
 #define XBOX_H
 
 #include <kernel.h>
+#include <util/betype.h>
 
 #pragma pack(push, 1)
 
 struct XBOX_HARDWARE_INFO
 {
-   XDWORD Flags;
-   XBYTE  NumberOfProcessors;
-   XBYTE  PCIBridgeRevisionID;
-   XBYTE  Reserved[6];
-   XWORD  BldrMagic;
-   XWORD  BldrFlags;
+   BE<XDWORD> Flags;
+   BE<XBYTE>  NumberOfProcessors;
+   BE<XBYTE>  PCIBridgeRevisionID;
+   BE<XBYTE>  Reserved[6];
+   BE<XWORD>  BldrMagic;
+   BE<XWORD>  BldrFlags;
 };
 
 struct KERNEL_VERSION
 {
-   XWORD Major;
-   XWORD Minor;
-   XWORD Build;
-   XBYTE ApprovalType;
-   XBYTE QFE;
+   BE<XWORD> Major;
+   BE<XWORD> Minor;
+   BE<XWORD> Build;
+   BE<XBYTE> ApprovalType;
+   BE<XBYTE> QFE;
 };
 
 #pragma pack(pop)

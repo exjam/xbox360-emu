@@ -7,7 +7,6 @@
 
 namespace ppc
 {
-struct Instruction;
 
 namespace Disassembler
 {
@@ -23,7 +22,7 @@ struct State
    } result;
 };
 
-#include "emugen_instr_table.h"
+bool decode(State *state, Instruction instr);
 
 } // namespace Disassembler
 

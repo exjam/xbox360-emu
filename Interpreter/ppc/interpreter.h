@@ -5,7 +5,6 @@
 
 namespace ppc
 {
-struct Instruction;
 
 namespace Interpreter
 {
@@ -16,9 +15,11 @@ struct State {
    Registers reg;
 };
 
+bool decode(State *state, Instruction instr);
+
 bool raise(State *state, ppc::Exceptions exception);
 
-#include "emugen_instr_table.h"
+#include <emugen_stubs.h>
 
 } // namespace Interpreter
 

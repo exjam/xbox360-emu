@@ -318,7 +318,7 @@ bool parseHeader(std::string path, ast_libdef &libdef, std::vector<Export> &expo
          exp.ordinal = itr->second;
       }
 
-      exports.emplace_back(exp);
+      exports.push_back(exp);
    }
 
    in.close();

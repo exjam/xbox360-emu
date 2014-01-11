@@ -59,7 +59,7 @@ public:
       ppc::Instruction ins;
       UINT32 address = index * 4 + m_startAddress;
       disState.cia = address;
-      ins.value = be::Memory::read<uint32_t>(disState.cia);
+      ins.value = Memory::read<uint32_t>(disState.cia);
       ppc::Disassembler::decode(&disState, ins);
       return QString::fromStdString(ppc::Disassembler::toString(&disState));
    }

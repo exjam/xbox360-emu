@@ -19,6 +19,8 @@ private:
    bool loadLibrary(xex::ImportLibrary &library);
    bool loadImport(xex::ImportLibrary &library, xex::ImportLibrary::Import &import);
 
+   bool analyse(uint64_t start);
+
 protected: /* IKernel */
    void resumeThread(Thread *thread);
    xex::Binary *getXexBinary();

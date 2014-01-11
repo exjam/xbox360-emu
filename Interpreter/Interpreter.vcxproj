@@ -20,14 +20,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="interpreter.cpp" />
-    <ClCompile Include="interpreter_alu.cpp" />
-    <ClCompile Include="interpreter_cpu.cpp" />
-    <ClCompile Include="interpreter_flow.cpp" />
-    <ClCompile Include="interpreter_fpu.cpp" />
-    <ClCompile Include="interpreter_kernel.cpp" />
-    <ClCompile Include="interpreter_load.cpp" />
-    <ClCompile Include="interpreter_mmu.cpp" />
-    <ClCompile Include="interpreter_store.cpp" />
+    <ClCompile Include="alu.cpp" />
+    <ClCompile Include="cpu.cpp" />
+    <ClCompile Include="flow.cpp" />
+    <ClCompile Include="fpu.cpp" />
+    <ClCompile Include="kernel.cpp" />
+    <ClCompile Include="load.cpp" />
+    <ClCompile Include="mmu.cpp" />
+    <ClCompile Include="store.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ppc\fpu.h" />

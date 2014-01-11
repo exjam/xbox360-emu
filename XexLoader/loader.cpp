@@ -1,9 +1,9 @@
 #include "xex/xex.h"
 #include "aes.h"
 
-#include "util/log.h"
-#include "util/be/memory.h"
-#include "util/be/inputstream.h"
+#include <util/log.h>
+#include <util/memory.h>
+#include <util/biginputstream.h>
 
 #include <windows.h>
 
@@ -26,7 +26,7 @@ namespace xex
 
 bool Loader::load(std::istream &istr, xex::Binary &binary)
 {
-   be::InputStream in(istr);
+   BigInputStream in(istr);
    xex::Header &header = binary.header;
 
    in
@@ -183,7 +183,7 @@ bool Loader::load(std::istream &istr, xex::Binary &binary)
          >> section._typePageCount
          >> section.digest;
 
-      header.sections.emplace_back(section);
+      header.sections.push_back(section);
    }
 
    /* Decrypt Header Key */
@@ -209,7 +209,7 @@ bool Loader::load(std::istream &istr, xex::Binary &binary)
    return true;
 }
 
-bool Loader::readImage(be::InputStream &in, xex::Header &header)
+bool Loader::readImage(BigInputStream &in, xex::Header &header)
 {
    switch (header.baseFileFormat.compression.type) {
    case xex::BaseFileFormat::Compression::None:
@@ -225,20 +225,19 @@ bool Loader::readImage(be::InputStream &in, xex::Header &header)
    return false;
 }
 
-bool Loader::readImageUncompressed(be::InputStream &in, xex::Header &header)
+bool Loader::readImageUncompressed(BigInputStream &in, xex::Header &header)
 {
    return false;
 }
 
-bool Loader::readImageNormalCompression(be::InputStream &in, xex::Header &header)
+bool Loader::readImageNormalCompression(BigInputStream &in, xex::Header &header)
 {
    return false;
 }
 
-bool Loader::readImageBasicCompression(be::InputStream &in, xex::Header &header)
+bool Loader::readImageBasicCompression(BigInputStream &in, xex::Header &header)
 {
-   uint32_t exeLength = in.size();
-   uint32_t uncompressedSize;
+   unsigned uncompressedSize;
 
    in.seek(header.peDataOffset);
 
@@ -250,7 +249,7 @@ bool Loader::readImageBasicCompression(be::InputStream &in, xex::Header &header)
    }
 
    /* Allocate virtual memory */
-   uint8_t *pExecutable = be::Memory::allocate(header.imageBaseAddress.address, uncompressedSize);
+   uint8_t *pExecutable = Memory::allocate(header.imageBaseAddress.address, uncompressedSize);
 
    if (!pExecutable) {
       xDebug() << "Could not allocate memory at 0x" << Log::hex(header.imageBaseAddress.address, 8) << " with size " << uncompressedSize;
@@ -286,7 +285,7 @@ bool Loader::readImageBasicCompression(be::InputStream &in, xex::Header &header)
    return true;
 }
 
-bool Loader::loadPe(xex::Binary &binary, uint32_t exeAddress)
+bool Loader::loadPe(xex::Binary &binary, uint64_t exeAddress)
 {
    /* Verify DOS Header */
    const PIMAGE_DOS_HEADER dosHeader = reinterpret_cast<PIMAGE_DOS_HEADER>(exeAddress);
@@ -346,7 +345,7 @@ bool Loader::loadPe(xex::Binary &binary, uint32_t exeAddress)
       section.address = exeAddress + secHeader->VirtualAddress;
       section.size = secHeader->Misc.VirtualSize;
       section.flags = secHeader->Characteristics;
-      binary.sections.emplace_back(section);
+      binary.sections.push_back(section);
    }
 
    return true;
@@ -354,12 +353,11 @@ bool Loader::loadPe(xex::Binary &binary, uint32_t exeAddress)
 
 void Loader::loadImportLibraries(xex::ImportLibraries &importLibraries)
 {
-
    for (auto &library : importLibraries.libraries) {
       for (auto &record : library.records) {
-         const uint32_t value = be::Memory::read<uint32_t>(record.address);
-         const uint32_t ordinal = value & 0xFFFF;
-         const uint32_t type = value >> 24;
+         auto value = Memory::read<uint32_t>(record.address);
+         auto ordinal = value & 0xFFFF;
+         auto type = value >> 24;
 
          switch (type) {
          case xex::ImportLibraries::ImportOrdinal:
@@ -370,7 +368,7 @@ void Loader::loadImportLibraries(xex::ImportLibraries &importLibraries)
             import.thunk   = 0;
             import.args    = 0;
             import.handle  = nullptr;
-            library.imports.emplace_back(import);
+            library.imports.push_back(import);
             break;
          }
          case xex::ImportLibraries::ImportThunk:
@@ -387,7 +385,7 @@ void Loader::loadImportLibraries(xex::ImportLibraries &importLibraries)
    }
 }
 
-void Loader::readHeader(be::InputStream &in, uint32_t length, xex::ResourceInfo &resourceInfo)
+void Loader::readHeader(BigInputStream &in, unsigned length, xex::ResourceInfo &resourceInfo)
 {
    in 
       >> resourceInfo.titleId
@@ -395,7 +393,7 @@ void Loader::readHeader(be::InputStream &in, uint32_t length, xex::ResourceInfo 
       >> resourceInfo.size;
 }
    
-void Loader::readHeader(be::InputStream &in, uint32_t length, xex::BaseFileFormat &baseFileFormat)
+void Loader::readHeader(BigInputStream &in, unsigned length, xex::BaseFileFormat &baseFileFormat)
 {
    in
       >> baseFileFormat.encryption.type
@@ -404,16 +402,16 @@ void Loader::readHeader(be::InputStream &in, uint32_t length, xex::BaseFileForma
    switch (baseFileFormat.compression.type) {
    case xex::BaseFileFormat::Compression::Basic:
       {
-         uint32_t blocks = (length - 4) / 8;
+         unsigned blocks = (length - 4) / 8;
 
-         for (uint32_t i = 0; i < blocks; ++i) {
+         for (unsigned i = 0; i < blocks; ++i) {
             xex::BaseFileFormat::BasicCompression::Block block;
 
             in
                >> block.dataSize
                >> block.zeroSize;
 
-            baseFileFormat.compression.basic.blocks.emplace_back(block);
+            baseFileFormat.compression.basic.blocks.push_back(block);
          }
          break;
       }
@@ -432,23 +430,23 @@ void Loader::readHeader(be::InputStream &in, uint32_t length, xex::BaseFileForma
    }
 }
 
-void Loader::readHeader(be::InputStream &in, uint32_t length, xex::EntryPoint &entryPoint)
+void Loader::readHeader(BigInputStream &in, unsigned length, xex::EntryPoint &entryPoint)
 {
    in
       >> entryPoint.address;
 }
 
-void Loader::readHeader(be::InputStream &in, uint32_t length, xex::ImageBaseAddress &imageBaseAddress)
+void Loader::readHeader(BigInputStream &in, unsigned length, xex::ImageBaseAddress &imageBaseAddress)
 {
    in
       >> imageBaseAddress.address;
 }
 
-void Loader::readStringTable(be::InputStream &in, uint32_t length, std::vector<std::string> &stringTable)
+void Loader::readStringTable(BigInputStream &in, unsigned length, std::vector<std::string> &stringTable)
 {
    std::string curString;
 
-   for (uint32_t i = 0; i < length; ++i) {
+   for (unsigned i = 0; i < length; ++i) {
       uint8_t c;
       in >> c;
 
@@ -461,10 +459,11 @@ void Loader::readStringTable(be::InputStream &in, uint32_t length, std::vector<s
    }
 }
 
-void Loader::readHeader(be::InputStream &in, uint32_t length, xex::ImportLibraries &importLibraries)
+void Loader::readHeader(BigInputStream &in, unsigned length, xex::ImportLibraries &importLibraries)
 {
-   uint32_t stringTableSize, libraryCount;
    std::vector<std::string> stringTable;
+   uint32_t stringTableSize;
+   uint32_t libraryCount;
 
    in
       >> stringTableSize
@@ -472,9 +471,10 @@ void Loader::readHeader(be::InputStream &in, uint32_t length, xex::ImportLibrari
 
    readStringTable(in, stringTableSize, stringTable);
 
-   for (uint32_t i = 0; i < libraryCount; ++i) {
-      uint16_t nameIndex, importCount;
+   for (unsigned i = 0; i < libraryCount; ++i) {
       xex::ImportLibrary library;
+      uint16_t nameIndex;
+      uint16_t importCount;
 
       in
          >> library.unknown
@@ -490,31 +490,31 @@ void Loader::readHeader(be::InputStream &in, uint32_t length, xex::ImportLibrari
       for (uint16_t j = 0; j < importCount; ++j) {
          xex::ImportLibrary::Record record;
          in >> record.address;
-         library.records.emplace_back(record);
+         library.records.push_back(record);
       }
 
-      importLibraries.libraries.emplace_back(library);
+      importLibraries.libraries.push_back(library);
    }
 }
 
-void Loader::readHeader(be::InputStream &in, uint32_t length, xex::ChecksumTimestamp &checksumTimestamp)
+void Loader::readHeader(BigInputStream &in, unsigned length, xex::ChecksumTimestamp &checksumTimestamp)
 {
    in
       >> checksumTimestamp.checksum
       >> checksumTimestamp.timestamp;
 }
    
-void Loader::readHeader(be::InputStream &in, uint32_t length, xex::OriginalPeName &originalPeName)
+void Loader::readHeader(BigInputStream &in, unsigned length, xex::OriginalPeName &originalPeName)
 {
    in
       >> NullPadString(originalPeName.name);
 }
 
-void Loader::readHeader(be::InputStream &in, uint32_t length, xex::StaticLibraries &staticLibraries)
+void Loader::readHeader(BigInputStream &in, unsigned length, xex::StaticLibraries &staticLibraries)
 {
-   uint32_t count = length / 16;
+   unsigned count = length / 16;
 
-   for (uint32_t i = 0; i < count; ++i) {
+   for (unsigned i = 0; i < count; ++i) {
       xex::StaticLibrary library;
 
       in
@@ -524,11 +524,11 @@ void Loader::readHeader(be::InputStream &in, uint32_t length, xex::StaticLibrari
          >> library.version.build
          >> library.version._qfeApproved;
 
-      staticLibraries.libraries.emplace_back(library);
+      staticLibraries.libraries.push_back(library);
    }
 }
 
-void Loader::readHeader(be::InputStream &in, uint32_t length, xex::TlsInfo &tlsInfo)
+void Loader::readHeader(BigInputStream &in, unsigned length, xex::TlsInfo &tlsInfo)
 {
    in
       >> tlsInfo.slotCount
@@ -537,25 +537,25 @@ void Loader::readHeader(be::InputStream &in, uint32_t length, xex::TlsInfo &tlsI
       >> tlsInfo.rawDataSize;
 }
 
-void Loader::readHeader(be::InputStream &in, uint32_t length, xex::DefaultStackSize &defaultStackSize)
+void Loader::readHeader(BigInputStream &in, unsigned length, xex::DefaultStackSize &defaultStackSize)
 {
    in
       >> defaultStackSize.size;
 }
 
-void Loader::readHeader(be::InputStream &in, uint32_t length, xex::DefaultHeapSize &defaultHeapSize)
+void Loader::readHeader(BigInputStream &in, unsigned length, xex::DefaultHeapSize &defaultHeapSize)
 {
    in
       >> defaultHeapSize.size;
 }
 
-void Loader::readHeader(be::InputStream &in, uint32_t length, xex::SystemFlags &systemFlags)
+void Loader::readHeader(BigInputStream &in, unsigned length, xex::SystemFlags &systemFlags)
 {
    in
       >> systemFlags.flags;
 }
 
-void Loader::readHeader(be::InputStream &in, uint32_t length, xex::ExecutionInfo &executionInfo)
+void Loader::readHeader(BigInputStream &in, unsigned length, xex::ExecutionInfo &executionInfo)
 {
    in
       >> executionInfo.mediaId
@@ -569,7 +569,7 @@ void Loader::readHeader(be::InputStream &in, uint32_t length, xex::ExecutionInfo
       >> executionInfo.saveGameId;
 }
 
-void Loader::readHeader(be::InputStream &in, uint32_t length, xex::GameRatings &gameRatings)
+void Loader::readHeader(BigInputStream &in, unsigned length, xex::GameRatings &gameRatings)
 {
    in
       >> gameRatings.esrb
@@ -586,24 +586,24 @@ void Loader::readHeader(be::InputStream &in, uint32_t length, xex::GameRatings &
       >> gameRatings.fpb;
 }
 
-void Loader::readHeader(be::InputStream &in, uint32_t length, xex::LanKey &lanKey)
+void Loader::readHeader(BigInputStream &in, unsigned length, xex::LanKey &lanKey)
 {
    in
       >> lanKey.key;
 }
 
-void Loader::readHeader(be::InputStream &in, uint32_t length, xex::AlternateTitleIds &alternateTitleIds)
+void Loader::readHeader(BigInputStream &in, unsigned length, xex::AlternateTitleIds &alternateTitleIds)
 {
-   uint32_t count = length / 4;
+   unsigned count = length / 4;
 
-   for (uint32_t i = 0; i < count; ++i) {
+   for (unsigned i = 0; i < count; ++i) {
       uint32_t id;
       in >> id;
-      alternateTitleIds.ids.emplace_back(id);
+      alternateTitleIds.ids.push_back(id);
    }
 }
 
-void Loader::readHeader(be::InputStream &in, uint32_t length, xex::LoaderInfo &loaderInfo)
+void Loader::readHeader(BigInputStream &in, unsigned length, xex::LoaderInfo &loaderInfo)
 {
    in 
       >> loaderInfo.headerSize

@@ -5,7 +5,7 @@
 #include <assert.h>
 #include <stdint.h>
 
-#include "util/bits.h"
+#include <util/bits.h>
 
 struct NullPadString {
    NullPadString(std::string &str) : str(str) {}
@@ -18,52 +18,24 @@ struct FixedWidthString {
    int width;
 };
 
-namespace be
-{
-
-class InputStream
+class BigInputStream
 {
 public:
-   InputStream(std::istream& stream) :
+   BigInputStream(std::istream& stream) :
       mStream(stream)
    {
    }
 
-   InputStream & operator>>(uint8_t& val)
+   template<typename Type>
+   BigInputStream & operator>>(Type& val)
    {
-      mStream.read(reinterpret_cast<char*>(&val), sizeof(uint8_t));
-      return *this;
-   }
-
-   InputStream & operator>>(uint16_t& val)
-   {
-      mStream.read(reinterpret_cast<char*>(&val), sizeof(uint16_t));
+      mStream.read(reinterpret_cast<char*>(&val), sizeof(Type));
       val = bits::swap(val);
       return *this;
    }
 
-   InputStream & operator>>(uint32_t& val)
-   {
-      mStream.read(reinterpret_cast<char*>(&val), sizeof(uint32_t));
-      val = bits::swap(val);
-      return *this;
-   }
-
-   InputStream & operator>>(uint64_t& val)
-   {
-      mStream.read(reinterpret_cast<char*>(&val), sizeof(uint64_t));
-      val = bits::swap(val);
-      return *this;
-   }
-
-   template<int N>
-   InputStream & operator>>(uint8_t (&val)[N])
-   {
-      mStream.read(reinterpret_cast<char*>(val), N);
-      return *this;
-   }
-
-   InputStream & operator>>(NullPadString& val)
+   template<>
+   BigInputStream & operator>>(NullPadString& val)
    {
       unsigned __int8 c;
       int i = 0;
@@ -81,13 +53,21 @@ public:
       return *this;
    }
 
-   InputStream & operator>>(FixedWidthString& val)
+   template<>
+   BigInputStream & operator>>(FixedWidthString& val)
    {
       char buf[256];
       assert(val.width + 1 < sizeof(buf));
       mStream.read(buf, val.width);
       buf[val.width] = 0;
       val.str = buf;
+      return *this;
+   }
+
+   template<int N>
+   BigInputStream & operator>>(uint8_t(&val)[N])
+   {
+      mStream.read(reinterpret_cast<char*>(val), N);
       return *this;
    }
 
@@ -130,6 +110,4 @@ private:
    std::istream& mStream;
 };
 
-} //namespace be
-
-#endif // BIG_ENDIAN_INPUT_STREAM_H
+#endif // ifdef BIG_ENDIAN_INPUT_STREAM_H

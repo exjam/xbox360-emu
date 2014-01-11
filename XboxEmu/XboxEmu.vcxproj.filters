@@ -23,6 +23,9 @@
     <ClCompile Include="kernel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="analyse.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="system.h">

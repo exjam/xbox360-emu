@@ -2,7 +2,7 @@
 
 #include <ppc/interpreter.h>
 #include <ppc/instructions.h>
-#include <util/be/memory.h>
+#include <util/memory.h>
 #include <parser/parser.h>
 #include <kernel.h>
 
@@ -231,33 +231,31 @@ bool System::resolveImports(xex::ImportLibraries &imports)
          if (loadImport(lib, import)) {
             if (import.thunk) {
                /* Import Function */
-               ppc::Instruction instr = { 0 };
-               instr.opcode = ppc::op::krncall;
+               auto instr = ppc::createInstruction(ppc::InstructionID::krncall);
                instr.uimm = import.ordinal;
                instr.rA = import.args;
                instr.rD = 1;
 
-               be::Memory::write<uint32_t>(import.thunk,
-                                           instr.value);
+               Memory::write<uint32_t>(import.thunk,
+                                       instr.value);
 
-               be::Memory::write<uint64_t>(import.thunk + 4,
-                                           reinterpret_cast<uint64_t>(import.handle));
+               Memory::write<uint64_t>(import.thunk + 4,
+                                       reinterpret_cast<uint64_t>(import.handle));
             } else {
                /* Import Variable */
-               be::Memory::write<uint32_t>(import.address,
-                                           reinterpret_cast<uint32_t>(import.handle));
+               Memory::write<uint32_t>(import.address,
+                                       reinterpret_cast<uint32_t>(import.handle));
             }
          } else {
             if (import.thunk) {
-               ppc::Instruction instr = { 0 };
-               instr.opcode = ppc::op::krncall;
+               auto instr = ppc::createInstruction(ppc::InstructionID::krncall);
                instr.uimm = import.ordinal;
                instr.rA = instr.rD = 0;
 
-               be::Memory::write<uint32_t>(import.thunk, instr.value);
+               Memory::write<uint32_t>(import.thunk, instr.value);
 
-               be::Memory::write<uint64_t>(import.thunk + 4,
-                                           reinterpret_cast<uint64_t>(&lib));
+               Memory::write<uint64_t>(import.thunk + 4,
+                                       reinterpret_cast<uint64_t>(&lib));
             }
          }
       }

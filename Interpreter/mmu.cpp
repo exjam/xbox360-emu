@@ -1,11 +1,11 @@
 #include "ppc/interpreter.h"
-#include "ppc/instructions.h"
-
-#include "util/log.h"
-#include "util/bits.h"
-#include "util/be/memory.h"
-
 #include "common.h"
+
+#include <ppc/instructions.h>
+
+#include <util/log.h>
+#include <util/bits.h>
+#include <util/memory.h>
 
 #include <limits>
 
@@ -52,7 +52,7 @@ bool dcbz(State *state, Instruction instr)
 {
    auto ea = gpr0(instr.rA) + gpr(instr.rB);
    auto n = 32; /* TODO: dcbz block size */
-   be::Memory::zero(ea & ~(n -1), n);
+   Memory::zero(ea & ~(n -1), n);
    return false;
 }
 

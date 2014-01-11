@@ -1,12 +1,8 @@
 #include "ppc/interpreter.h"
-#include "ppc/instructions.h"
 #include "ppc/fpu.h"
-
-#include "util/log.h"
-#include "util/bits.h"
-#include "util/be/memory.h"
-
 #include "common.h"
+
+#include <util/bits.h>
 
 #include <limits>
 #include <float.h>
@@ -37,16 +33,9 @@ static inline void updateFpscr(State *state)
 {
    /* TODO: */
    //uint32_t vxvc : 1;      /* FP Exception: Invalid Operation for Compare */
-   //uint32_t vximz : 1;     /* FP Exception: Invalid Operation for [Inf * Zero] */
-   //uint32_t vxzdz : 1;     /* FP Exception: Invalid Operation for [Zero / Zero] */
-   //uint32_t vxidi : 1;     /* FP Exception: Invalid Operation for [Inf / Inf] */
-   //uint32_t vxisi : 1;     /* FP Exception: Invalid Operation for [Inf - Inf] */
-   //uint32_t vxsnan : 1;    /* FP Exception: Invalid Operation for SNaN */
    //uint32_t fr : 1;        /* FP State: Fraction Rounded */
-
-   /* UNUSED: _SW_INVALID, _SW_DENORMAL */
-   
-   /* _SW_UNEMULATED _SW_SQRTNEG  _SW_STACKOVERFLOW _SW_STACKUNDERFLOW*/
+      
+   /* _SW_INVALID, _SW_DENORMAL, _SW_UNEMULATED, _SW_STACKOVERFLOW, _SW_STACKUNDERFLOW */
 
    auto flags = _statusfp();
    Fpscr fpscr = state->reg.fpscr;
@@ -823,9 +812,9 @@ bool mtfsfi(State *state, Instruction instr)
 {
 
    if (instr.crfD == 0) {
-      fpscr(instr.crfD) = instr.imm & 0x9;
+      fpscr(instr.crfD) = instr.uimm & 0x9;
    } else {
-      fpscr(instr.crfD) = instr.imm;
+      fpscr(instr.crfD) = instr.uimm;
    }
 
    updateFexVx(state);

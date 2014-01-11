@@ -1,9 +1,7 @@
 #include "thread.h"
 #include "xboxkrnl.h"
 
-#include <util/be/memory.h>
-
-using be::Memory;
+#include <util/memory.h>
 
 DWORD __stdcall ExCreateThreadStub(LPVOID lpThreadParameter)
 {

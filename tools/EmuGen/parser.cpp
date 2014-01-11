@@ -5,6 +5,8 @@
 #include <fstream>
 #include <iostream>
 
+ast_cat_opcd *g_curCategory = nullptr;
+
 /* Character Types */
 auto whitespace = atomic(*(char_(' ') | char_('\t') | char_('\n') | char_('\r')));
 auto letter     = char_range('a', 'z') | char_range('A', 'Z');
@@ -44,7 +46,8 @@ auto insf_root     = ast<ast_insf>()        >> *insf_field;
 /* Opcode Definition */
 auto cat_opcd      = ast<ast_cat_opcd>()    >> (char_('[') >> symbol >> *(char_('=') >> number >> char_(',') >> symbol) >> char_(']'));
 auto opcd_extra    = ast<ast_opcd_extra>()  >> (symbol >> -(char_('=') >> (number | str | chr)));
-auto opcd_disasm   = ast<ast_opcd_disasm>() >> (name >> -(symbol >> *((char_(',') | char_('(')) >> symbol >> -char_(')'))));
+auto opcd_disasm_reg = ast<ast_opcd_disasm_reg>() >> (-char_('+') >> symbol);
+auto opcd_disasm   = ast<ast_opcd_disasm>() >> (name >> -(opcd_disasm_reg >> *((char_(',') | char_('(')) >> opcd_disasm_reg >> -char_(')'))));
 auto opcd_def      = ast<ast_opcd_def>()    >> (number >> char_(':') >> opcd_disasm >> -(char_(':') >> opcd_extra >> *(char_(',') >> opcd_extra)));
 auto opcd_root     = ast<ast_opcd>()        >> (cat_opcd >> *opcd_def);
 

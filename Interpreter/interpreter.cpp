@@ -1,11 +1,7 @@
 #include "ppc/interpreter.h"
-#include "ppc/instructions.h"
 
-#include "util/log.h"
-#include "util/bits.h"
-#include "util/be/memory.h"
-
-#include "common.h"
+#include <ppc/instructions.h>
+#include <ppc/decoder.h>
 
 namespace ppc 
 {
@@ -13,7 +9,20 @@ namespace ppc
 namespace Interpreter
 {
 
-#include "emugen_instr_table.cpp"
+typedef bool (*fptr_t)(State *, Instruction);
+
+#include <emugen_table.h>
+
+bool decode(State *state, Instruction instr)
+{
+   InstructionID id = ppc::decode(instr);
+
+   if (id == InstructionID::Unknown) {
+      return false;
+   } else {
+      return _emugenTable[static_cast<unsigned>(id)](state, instr);
+   }
+}
 
 } // namespace Interpreter
 

@@ -3,9 +3,8 @@
 
 #include <xex/xex.h>
 #include <Windows.h>
-#include <util/be/memory.h>
+#include <util/memory.h>
 
-using be::Memory;
 using XLPXEXBINARY = XLP<xex::Binary>;
 
 XLP<XLDR_DATA_TABLE_ENTRY> XexExecutableModuleHandle;

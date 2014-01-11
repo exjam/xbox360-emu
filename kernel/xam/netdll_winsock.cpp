@@ -4,10 +4,9 @@
 #include <MSWSock.h>
 
 #include <util/bits.h>
-#include <util/be/memory.h>
+#include <util/memory.h>
 
 #pragma comment(lib, "ws2_32.lib")
-using be::Memory;
 
 template<typename SrcType, typename DstType>
 void swapSockAddr(const SrcType src, DstType dst)

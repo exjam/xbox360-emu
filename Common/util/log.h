@@ -10,15 +10,23 @@ class Log
 {
 public:
    struct hex {
-      hex(uint64_t number, uint64_t pad = 0) : number(number), pad(pad) {}
+      hex(uint64_t number, unsigned pad = 0) :
+         number(number), pad(pad)
+      {
+      }
+
       uint64_t number;
-      uint64_t pad;
+      unsigned pad;
    };
 
    struct bin {
-      bin(uint32_t number, uint32_t pad = 0) : number(number), pad(pad) {}
+      bin(uint32_t number, unsigned pad = 0) : 
+         number(number), pad(pad)
+      {
+      }
+
       uint32_t number;
-      uint32_t pad;
+      unsigned pad;
    };
 
 private:
@@ -55,7 +63,7 @@ private:
       template<>
       Output& operator << (const Log::bin &val)
       {
-         for (uint32_t i = 0; i < val.pad; ++i) {
+         for (unsigned i = 0; i < val.pad; ++i) {
             std::cout << ((val.number >> i) & 1);
          }
 

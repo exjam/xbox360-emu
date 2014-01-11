@@ -6,7 +6,7 @@
 #include "tester.h"
 
 #include <ppc/interpreter.h>
-#include <util/be/memory.h>
+#include <util/memory.h>
 #include <util/bits.h>
 #include <regex>
 
@@ -70,7 +70,7 @@ bool Test::load(const std::string &path)
          cond.value.value = astPre.mem_set->mem_value.value;
       }
 
-      m_preconditions.emplace_back(cond);
+      m_preconditions.push_back(cond);
    }
 
    /* Parse Post-Conditions */
@@ -92,7 +92,7 @@ bool Test::load(const std::string &path)
          }
       }
 
-      m_postconditions.emplace_back(cond);
+      m_postconditions.push_back(cond);
    }
 
    return true;
@@ -115,7 +115,7 @@ bool Test::run()
    while (state.cia < m_codeSize) {
       ppc::Instruction instr;
 
-      instr.value = be::Memory::read<uint32_t>(reinterpret_cast<uint64_t>(m_code + state.cia));
+      instr.value = Memory::read<uint32_t>(reinterpret_cast<uint64_t>(m_code + state.cia));
       ppc::Interpreter::decode(&state, instr);
 
       state.cia = state.nia;
@@ -306,7 +306,7 @@ bool Test::setMemory(ppc::Interpreter::State &state, uint64_t dst, Test::Value &
       return false;
    }
 
-   be::Memory::write(addr, value);
+   Memory::write(addr, value);
    return true;
 }
 
@@ -320,7 +320,7 @@ bool Test::checkMemory(ppc::Interpreter::State &state, uint64_t src, Test::Value
       return false;
    }
 
-   return value == be::Memory::read<uint64_t>(addr);
+   return value == Memory::read<uint64_t>(addr);
 }
 
 /* Ensure a Condition is met */

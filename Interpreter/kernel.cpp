@@ -1,13 +1,13 @@
 #include "ppc/interpreter.h"
-#include "ppc/instructions.h"
-
-#include "util/log.h"
-#include "util/bits.h"
-#include "util/be/memory.h"
-
 #include "common.h"
 
-#include "xex/xex.h"
+#include <ppc/instructions.h>
+
+#include <util/log.h>
+#include <util/bits.h>
+#include <util/memory.h>
+
+#include <xex/xex.h>
 
 #include <functional>
 
@@ -26,7 +26,7 @@ typedef uint64_t (*callKernelUnkArg)(...);
 /* Kernel Function Call */
 bool krncall(State *state, Instruction instr)
 {
-   auto fptr = be::Memory::read<uint64_t>(state->cia + 4);
+   auto fptr  = Memory::read<uint64_t>(state->cia + 4);
    auto valid = instr.rD;
    auto args  = instr.rA;
 

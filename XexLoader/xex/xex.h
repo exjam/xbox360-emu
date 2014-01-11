@@ -6,9 +6,10 @@
 #include <string>
 #include <vector>
 
-#include "util/log.h"
-#include "util/be/inputstream.h"
-#include "xex/optionalheaders.h"
+#include <util/log.h>
+#include <util/biginputstream.h>
+
+#include "optionalheaders.h"
 
 #define IMAGE_SIZEOF_NT_OPTIONAL_HEADER   224
 #define IMAGE_FILE_MACHINE_POWERPCBE      0x01F2
@@ -230,47 +231,47 @@ public:
    bool load(std::istream &istr, xex::Binary &binary);
 
 protected:
-   bool loadPe(xex::Binary &binary, uint32_t exeAddress);
+   bool loadPe(xex::Binary &binary, uint64_t exeAddress);
 
    void loadImportLibraries(xex::ImportLibraries &importLibraries);
 
-   bool readImage(be::InputStream &in, xex::Header &header);
-   bool readImageUncompressed(be::InputStream &in, xex::Header &header);
-   bool readImageNormalCompression(be::InputStream &in, xex::Header &header);
-   bool readImageBasicCompression(be::InputStream &in, xex::Header &header);
+   bool readImage(BigInputStream &in, xex::Header &header);
+   bool readImageUncompressed(BigInputStream &in, xex::Header &header);
+   bool readImageNormalCompression(BigInputStream &in, xex::Header &header);
+   bool readImageBasicCompression(BigInputStream &in, xex::Header &header);
 
-   void readHeader(be::InputStream &in, uint32_t length, xex::ResourceInfo &out);
-   void readHeader(be::InputStream &in, uint32_t length, xex::BaseFileFormat &out);
-   void readHeader(be::InputStream &in, uint32_t length, xex::EntryPoint &out);
-   void readHeader(be::InputStream &in, uint32_t length, xex::ImageBaseAddress &out);
-   void readHeader(be::InputStream &in, uint32_t length, xex::ImportLibraries &out);
-   void readHeader(be::InputStream &in, uint32_t length, xex::ChecksumTimestamp &out);
-   void readHeader(be::InputStream &in, uint32_t length, xex::OriginalPeName &out);
-   void readHeader(be::InputStream &in, uint32_t length, xex::StaticLibraries &out);
-   void readHeader(be::InputStream &in, uint32_t length, xex::TlsInfo &out);
-   void readHeader(be::InputStream &in, uint32_t length, xex::DefaultStackSize &out);
-   void readHeader(be::InputStream &in, uint32_t length, xex::DefaultHeapSize &out);
-   void readHeader(be::InputStream &in, uint32_t length, xex::SystemFlags &out);
-   void readHeader(be::InputStream &in, uint32_t length, xex::ExecutionInfo &out);
-   void readHeader(be::InputStream &in, uint32_t length, xex::GameRatings &out);
-   void readHeader(be::InputStream &in, uint32_t length, xex::LanKey &out);
-   void readHeader(be::InputStream &in, uint32_t length, xex::AlternateTitleIds &out);
-   void readHeader(be::InputStream &in, uint32_t length, xex::LoaderInfo &out);
-   void readStringTable(be::InputStream &in,
-                        uint32_t length,
+   void readHeader(BigInputStream &in, unsigned length, xex::ResourceInfo &out);
+   void readHeader(BigInputStream &in, unsigned length, xex::BaseFileFormat &out);
+   void readHeader(BigInputStream &in, unsigned length, xex::EntryPoint &out);
+   void readHeader(BigInputStream &in, unsigned length, xex::ImageBaseAddress &out);
+   void readHeader(BigInputStream &in, unsigned length, xex::ImportLibraries &out);
+   void readHeader(BigInputStream &in, unsigned length, xex::ChecksumTimestamp &out);
+   void readHeader(BigInputStream &in, unsigned length, xex::OriginalPeName &out);
+   void readHeader(BigInputStream &in, unsigned length, xex::StaticLibraries &out);
+   void readHeader(BigInputStream &in, unsigned length, xex::TlsInfo &out);
+   void readHeader(BigInputStream &in, unsigned length, xex::DefaultStackSize &out);
+   void readHeader(BigInputStream &in, unsigned length, xex::DefaultHeapSize &out);
+   void readHeader(BigInputStream &in, unsigned length, xex::SystemFlags &out);
+   void readHeader(BigInputStream &in, unsigned length, xex::ExecutionInfo &out);
+   void readHeader(BigInputStream &in, unsigned length, xex::GameRatings &out);
+   void readHeader(BigInputStream &in, unsigned length, xex::LanKey &out);
+   void readHeader(BigInputStream &in, unsigned length, xex::AlternateTitleIds &out);
+   void readHeader(BigInputStream &in, unsigned length, xex::LoaderInfo &out);
+   void readStringTable(BigInputStream &in,
+                        unsigned length,
                         std::vector<std::string> &out);
 
    template<typename T>
-   void readHeader(be::InputStream &bes, uint32_t length, T &header)
+   void readHeader(BigInputStream &bes, unsigned length, T &header)
    {
       xDebug()
          << "Unimplemented header found 0x"
-         << Log::hex(static_cast<uint32_t>(T::id))
+         << Log::hex(static_cast<unsigned>(T::id))
          << " length " << length;
 
       std::cout << std::endl;
       
-      for (uint32_t i = 0; i < length; ++i) {
+      for (unsigned i = 0; i < length; ++i) {
          uint8_t c;
          bes >> c;
          xDebugInline() << Log::hex(c, 2);

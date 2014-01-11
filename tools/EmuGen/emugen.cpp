@@ -3,15 +3,10 @@
 #include <map>
 #include <iostream>
 #include <fstream>
+#include <sstream>
+#include <assert.h>
 #include <algorithm>
 #include <functional>
-
-struct Node {
-   int id;
-   ast_insf_field *field;
-   std::multimap<int, Node *> children;
-   std::map<int, ast_opcd_def *> instructions;
-};
 
 EmuGen::EmuGen()
 {
@@ -27,16 +22,205 @@ bool EmuGen::run(const std::string &definition, const std::string &outDirectory)
       return false;
    }
 
-   createInstructionList(outDirectory + "/emugen_instr_list.h");
-   createInstructionTableHeader(outDirectory + "/emugen_instr_table.h");
-   createInstructionTableSource(outDirectory + "/emugen_instr_table.cpp");
+   /* Create List */
+   for (auto &group : m_ast.opcodes) {
+      for (auto &instr : group.opcodes) {
+         instr.category = &group.declaration;
+         m_instructionList[instr.disasm.name.value] = &instr;
+      }
+   }
 
-   createDisassembler(outDirectory + "/emugen_instr_disasm.cpp");
+   /* Create Tree */
+   for (auto &instr : m_instructionList) {
+      std::string xo1 = instr.second->category->primary.value;
+      auto *table = &m_rootTable.table[xo1];
+
+      for (auto &cat : instr.second->category->secondary) {
+         auto next = table->find(cat.first.value);
+         DecodeTable *nextTable;
+
+         if (next == table->end()) {
+            nextTable = new DecodeTable();
+            table->insert(std::make_pair(cat.first.value, nextTable));
+         } else {
+            assert(next->second->type == DecodeNode::Table);
+            nextTable = reinterpret_cast<DecodeTable*>(next->second);
+         }
+
+         table = &nextTable->table[cat.second.value];
+      }
+
+      assert(table->find(instr.second->id.value) == table->end());
+
+      DecodeInstr *decodeInstr = new DecodeInstr();
+      decodeInstr->op = instr.second;
+      table->insert(std::make_pair(instr.second->id.value, decodeInstr));
+   }
+
+   createCpuInfo(outDirectory + "/emugen_cpu_info.h");
+
+   createInstructionList(outDirectory + "/emugen_instructionid.h");
+   createInstructionTableSource(outDirectory + "/emugen_table.h");
+
+   createStubs(outDirectory + "/emugen_stubs.cpp");
+   createStubsHeader(outDirectory + "/emugen_stubs.h");
+
+   createInstructionTable(outDirectory + "/emugen_instructions.h");
+   createDecoder(outDirectory + "/emugen_decoder.h");
 
    return true;
 }
 
-bool EmuGen::createDisassembler(const std::string &path)
+template <class T>
+int numDigits(T number)
+{
+   int digits = 0;
+
+   while (number) {
+      number /= 10;
+      digits++;
+   }
+
+   return digits;
+}
+
+bool EmuGen::createDecoder(const std::string &path)
+{
+   std::fstream out;
+   std::vector<std::string> tables;
+
+   out.open(path, std::ifstream::out);
+
+   if (!out.is_open()) {
+      std::cout << "Could not open " << path << " for writing" << std::endl;
+      return false;
+   }
+   
+   std::function<void(DecodeTable*, std::string name)> printDecodeTables =
+      [&](DecodeTable* table, std::string name) {
+         std::string first;
+
+         for (auto &entry : table->table) {
+            std::stringstream tableName;
+            tableName << name << "_" << entry.first;
+
+            auto field = findInstructionField(entry.first);
+
+            if (first.length()) {
+               out << "DecodeEntry *";
+            } else {
+               out << "DecodeEntry ";
+            }
+
+            out << "table" << tableName.str();
+
+            if (first.length()) {
+               out << " = table" << first << ";";
+            } else {
+               out << "[" << (1 << field->bitrange.size()) << "];";
+            }
+
+            out << std::endl;
+            first = tableName.str();
+         }
+
+         for (auto &entry : table->table) {
+            for (auto &child : entry.second) {
+               if (child.second->type == DecodeNode::Table) {
+                  std::stringstream tableName;
+                  tableName << name << "_" << entry.first << "_" << child.first;
+                  printDecodeTables(reinterpret_cast<DecodeTable*>(child.second), tableName.str());
+               }
+            }
+         }
+      };
+
+   printDecodeTables(&m_rootTable, "");
+   out << std::endl;
+
+   std::function<void(DecodeTable*, std::string name)> printDecodeFunction =
+      [&out, &printDecodeFunction](DecodeTable* table, std::string name) {
+         out << "InstructionID decode" << name << "(Instruction instr) {" << std::endl;
+         out << "   " << "DecodeEntry entry;" << std::endl;
+         out << std::endl;
+
+         for (auto &entry : table->table) {
+            std::stringstream tableName;
+            tableName << name << "_" << entry.first;
+
+            out << "   " << "entry = table" << tableName.str() << "[instr." << entry.first << "];" << std::endl;
+            out << "   " << "if (entry.value) {" << std::endl;
+            out << "   " << "   " << "if (entry.isTable()) {" << std::endl;
+            out << "   " << "   " << "   " << "return entry.table(instr);" << std::endl;
+            out << "   " << "   " << "} else {" << std::endl;
+            out << "   " << "   " << "   " << "return entry.instr();" << std::endl;
+            out << "   " << "   " << "}" << std::endl;
+            out << "   " << "}" << std::endl;
+            out << std::endl;
+         }
+
+         out << "   " << "return InstructionID::Unknown;" << std::endl;
+         out << "}" << std::endl;
+         out << std::endl;
+
+         for (auto &entry : table->table) {
+            for (auto &child : entry.second) {
+               if (child.second->type == DecodeNode::Table) {
+                  std::stringstream tableName;
+                  tableName << name << "_" << entry.first << "_" << child.first;
+                  printDecodeFunction(reinterpret_cast<DecodeTable*>(child.second), tableName.str());
+               }
+            }
+         }
+      };
+
+   printDecodeFunction(&m_rootTable, "");
+   out << std::endl;
+
+   std::function<void(DecodeTable*, std::string name)> printDecodeInit =
+      [&out, &printDecodeInit](DecodeTable* table, std::string name) {
+         for (auto &entry : table->table) {
+            std::stringstream tableName;
+            tableName << name << "_" << entry.first;
+
+            for (auto &child : entry.second) {
+               out << "   " << "table" << tableName.str();
+               out << "[" << child.first << "] = ";
+
+               if (child.second->type == DecodeNode::Instruction) {
+                  DecodeInstr *instr = reinterpret_cast<DecodeInstr*>(child.second);
+                  out << "InstructionID::" << getSafeFunctionName(instr->op->disasm.name.value);
+               } else if (child.second->type == DecodeNode::Table) {
+                  out << "decode" << tableName.str() << "_" << child.first;
+               }
+
+               out << ";" << std::endl;
+            }
+         }
+
+         for (auto &entry : table->table) {
+            for (auto &child : entry.second) {
+               if (child.second->type == DecodeNode::Table) {
+                  std::stringstream tableName;
+                  tableName << name << "_" << entry.first << "_" << child.first;
+                  printDecodeInit(reinterpret_cast<DecodeTable*>(child.second), tableName.str());
+               }
+            }
+         }
+      };
+
+   out << "bool init()" << std::endl;
+   out << "{" << std::endl;
+   printDecodeInit(&m_rootTable, "");
+   out << "   " << "return true;" << std::endl;
+   out << "}" << std::endl;
+   
+   out.close();
+   std::cout << "EmuGen: " << path << std::endl;
+   return true;
+}
+
+bool EmuGen::createInstructionTable(const std::string &path)
 {
    std::fstream out;
    out.open(path, std::ifstream::out);
@@ -46,72 +230,352 @@ bool EmuGen::createDisassembler(const std::string &path)
       return false;
    }
 
+   std::size_t nameLen = 0;
+   std::size_t opcdLen = 0;
+   std::size_t fieldsLen = 0;
+   std::vector<std::size_t> opnumLens;
+   opnumLens.push_back(0);
+
+   /* Get some lengths for formatting stuff */
    for (auto &instr : m_instructionList) {
-      auto fullname = instr.second->extras["fullname"].string->value;
-      auto codename = instr.second->disasm.name.value;
-      bool first;
+      nameLen = std::max(nameLen, getSafeFunctionName(instr.first).length());
+      opcdLen = std::max(opcdLen, 1 + instr.second->category->secondary.size());
 
-      out << "/* " << fullname << " */" << std::endl;
-      out << "bool " << getSafeFunctionName(codename) << "(State *state, Instruction instr)" << std::endl;
-      out << "{" << std::endl;
-      out << "   char buffer[64];" << std::endl;
-      out << "   " << "state->result.code = \"" << codename << "\";" << std::endl;
-      out << "   " << "state->result.name = \"" << fullname << "\";" << std::endl;
+      for (auto i = opnumLens.size(); i < opcdLen; ++i) {
+         opnumLens.push_back(0);
+      }
 
-      out << "   " << "sprintf_s(buffer, 64, \"";
+      std::size_t i = 0;
 
-      first = true;
+      for (; i < instr.second->category->secondary.size(); ++i) {
+         std::size_t digits = numDigits(instr.second->category->secondary[i].first.value);
+         opnumLens[i] = std::max(opnumLens[i], digits);
+      }
 
-      for (auto &op : instr.second->disasm.operands) {
-         auto insf = findInstructionField(op.value);
+      opnumLens[i] = std::max(opnumLens[i], static_cast<std::size_t>(numDigits(instr.second->id.value)));
 
-         if (!insf) {
-            std::cout << "Unknown instruction field " << op.value << std::endl;
-            return false;
-         }
+      std::size_t readCount = 0, writeCount = 0, modCount = 0;
+      std::size_t readLen = 0, writeLen = 0, modLen = 0;
 
-         if (op.value[0] == '(') {
-            out << "(";
-         } else if (!first) {
-            out << ", ";
-         }
-
-         first = false;
-
-         if (insf->extras.find("disasm") != insf->extras.end()) {
-            auto &disasm = insf->extras["disasm"];
-            out << disasm.string->value;
+      for (auto &opr : instr.second->disasm.operands) {
+         if (opr.prefix == '+') {
+            writeCount++;
+            writeLen += opr.name.value.length();
          } else {
-            out << "%u";
-         }
-
-         if (op.value[0] == '(') {
-            out << ")";
+            readCount++;
+            readLen += opr.name.value.length();
          }
       }
 
-      out << "\"";
+      for (auto &extra : instr.second->extras) {
+         auto found = std::find_if(m_ast.insf.fields.begin(), m_ast.insf.fields.end(),
+                                   [&extra](ast_insf_field& field) {
+            return field.name.value.compare(extra.first) == 0;
+         });
 
-      for (auto &op : instr.second->disasm.operands) {
-         auto insf = findInstructionField(op.value);
+         if (found == m_ast.insf.fields.end()) {
+            continue;
+         }
+
+         modCount++;
+         modLen += extra.first.length();
+      }
+
+      if (readCount) {
+         readLen += 1 + (readCount - 1) * 2;
+      }
+
+      if (writeCount) {
+         writeLen += 1 + (writeCount - 1) * 2;
+      }
+
+      if (modCount) {
+         modLen += 1 + (modCount - 1) * 2;
+      }
+
+      instr.second->fieldsLen = readLen + writeLen + modLen;
+      fieldsLen = std::max(fieldsLen, instr.second->fieldsLen);
+   }
+
+   out.fill(' ');
+
+   /* Enum is 1 index based */
+   out << "InstrEntry Instructions[] = {" << std::endl;
+   out << "   { }," << std::endl;
+
+   for (auto &instr : m_instructionList) {
+      std::string name = getSafeFunctionName(instr.first);
+
+      out << "   { ";
+
+      /* Instruction Name */
+      out << '"' << name << '"' << ", ";
+
+      for (std::size_t i = name.length(); i < nameLen; ++i) {
+         out << ' ';
+      }
+
+      /* Opcode List { xo, 31 }, { xo2, 28 } */
+      {
+         std::size_t opnum = 0;
+
+         out << "{ ";
+
+         out << "{ " << instr.second->category->primary.value;
+
+         for (auto &cat : instr.second->category->secondary) {
+            out << ", ";
+
+            out.setf(std::ios::adjustfield, std::ios::right);
+            out.width(opnumLens[opnum++]);
+
+            out << cat.first.value;
+
+            out.width(0);
+            out.unsetf(std::ios::adjustfield);
+
+            out << " }, { " << cat.second.value;
+         }
 
          out << ", ";
 
-         if (insf->extras.find("value") != insf->extras.end()) {
-            auto &value = insf->extras["value"];
-            out << value.string->value;
-         } else {
-            out << "instr." << insf->name.value;
+         out.setf(std::ios::adjustfield, std::ios::right);
+         out.width(opnumLens[opnum]);
+
+         out << instr.second->id.value;
+
+         out.width(0);
+         out.unsetf(std::ios::adjustfield);
+
+         out << " }";
+
+         for (std::size_t i = 1 + instr.second->category->secondary.size(); i < opcdLen; ++i) {
+            for (std::size_t j = 0; j < 11 + opnumLens[i]; ++j) {
+               out << ' ';
+            }
          }
+
+         out << " }, ";
       }
 
-      out << ");" << std::endl;
+      /* Output Fields */
+      {
+         int count = 0;
 
-      out << "   " << "state->result.operands = buffer;" << std::endl;
+         out << "{ ";
 
-      out << "   " << "return true;" << std::endl;
-      out << "}" << std::endl;
+         for (auto &opr : instr.second->disasm.operands) {
+            if (opr.prefix != '+') {
+               continue;
+            }
+
+            if (count != 0) {
+               out << ", ";
+            }
+
+            out << opr.name.value;
+            ++count;
+         }
+
+         if (count > 0) {
+            out << ' ';
+         }
+
+         out << "}, ";
+      }
+
+      /* Input Fields */
+      {
+         int count = 0;
+
+         out << "{ ";
+
+         for (auto &opr : instr.second->disasm.operands) {
+            if (opr.prefix == '+') {
+               continue;
+            }
+
+            if (count != 0) {
+               out << ", ";
+            }
+
+            out << opr.name.value;
+            ++count;
+         }
+
+         if (count > 0) {
+            out << ' ';
+         }
+
+         out << "}, ";
+      }
+
+      /* Modifiers */
+      {
+         int count = 0;
+
+         out << "{ ";
+
+         for (auto &extra : instr.second->extras) {
+            auto found = std::find_if(m_ast.insf.fields.begin(), m_ast.insf.fields.end(),
+                                   [&extra](ast_insf_field& field) {
+                                      return field.name.value.compare(extra.first) == 0;
+                                   });
+
+            if (found == m_ast.insf.fields.end()) {
+               continue;
+            }
+
+            if (count != 0) {
+               out << ", ";
+            }
+
+            out << extra.first;
+            ++count;
+         }
+
+         if (count > 0) {
+            out << ' ';
+         }
+
+         out << "}, ";
+      }
+
+      for (auto i = instr.second->fieldsLen; i < fieldsLen; ++i) {
+         out << ' ';
+      }
+
+      /* Fullname */
+      {
+         out << '"' << instr.second->extras["fullname"].string->value << '"';
+      }
+
+      out << " }," << std::endl;
+   }
+   out << "};" << std::endl;
+
+   out.close();
+   std::cout << "EmuGen: " << path << std::endl;
+   return true;
+}
+
+bool EmuGen::createCpuInfo(const std::string &path)
+{
+   std::fstream out;
+   out.open(path, std::ifstream::out);
+
+   if (!out.is_open()) {
+      std::cout << "Could not open " << path << " for writing" << std::endl;
+      return false;
+   }
+
+   out << "struct Registers_ {" << std::endl;
+
+   for (auto &reg : m_ast.reg.registers) {
+      if (reg.type.bitfield) {
+         int pos = 0;
+
+         out << "   union {" << std::endl;
+         out << "      " << reg.type.type.value << " value;" << std::endl;
+         out << "      struct {" << std::endl;
+
+         for (auto &field : reg.type.bitfield->bitfield) {
+            int bits = 1 + field.second.end.value - field.second.start.value;
+
+            if (pos != field.second.start.value) {
+               out << "         " << reg.type.type.value << " : " << (field.second.start.value - pos) << ";" << std::endl;
+               pos = field.second.start.value;
+            }
+
+            pos += bits;
+            out << "         " << reg.type.type.value << " " << field.first.value << " : " << bits << ";" << std::endl;
+         }
+
+         out << "      };" << std::endl;
+         out << "   } " << reg.name.value << ";" << std::endl;
+      } else {
+         out << "   " << reg.type.type.value << " " << reg.name.value;
+
+         if (reg.type.array) {
+            out << "[" << reg.type.array->size.value << "]";
+         }
+
+         out << ";" << std::endl;
+      }
+   }
+
+   out << "};" << std::endl;
+   out << std::endl;
+
+
+   out << "namespace FieldID {" << std::endl;
+   out << "enum Fields {" << std::endl;
+
+   for (auto &field : m_ast.insf.fields) {
+      out << "   " << field.name.value << "," << std::endl;
+   }
+
+   out << "};" << std::endl;
+   out << "};" << std::endl;
+   out << std::endl;
+
+
+   out << "union Instruction {" << std::endl;
+   out << "   uint32_t value;" << std::endl;
+
+   for (auto &field : m_ast.insf.fields) {
+      int start = field.bitrange.start.value;
+      int end = field.bitrange.end.value;
+
+      if (m_ast.arch.endian == ast_arch::BigEndian) {
+         start = 31 - start;
+         end   = 31 - end;
+         std::swap(start, end);
+      }
+      
       out << std::endl;
+
+      out << "   struct {" << std::endl;
+
+      if (start != 0) {
+         out << "      uint32_t : " << start << ";" << std::endl;
+      }
+
+      out << "      uint32_t " << field.name.value << " : " << (1 + end - start) << ";" << std::endl;
+
+      if (end != 31) {
+         out << "      uint32_t : " << (31 - end) << ";" << std::endl;
+      }
+
+      out << "   };" << std::endl;
+   }
+
+   out << "};" << std::endl;
+   out << std::endl;
+
+   out.close();
+   std::cout << "EmuGen: " << path << std::endl;
+   return true;
+}
+
+bool EmuGen::createStubs(const std::string &path)
+{
+   std::fstream out;
+   out.open(path, std::ifstream::out);
+
+   if (!out.is_open()) {
+      std::cout << "Could not open " << path << " for writing" << std::endl;
+      return false;
+   }
+   
+   for (auto &instr : m_instructionList) {
+      auto fullname = instr.second->extras["fullname"].string->value;
+
+      out << "/* " << fullname << " */" << std::endl;
+      out << "bool " << getSafeFunctionName(instr.first) << "(State *state, Instruction instr)" << std::endl;
+      out << "{" << std::endl;
+      out << "   return false;" << std::endl;
+      out << "}" << std::endl << std::endl;
    }
 
    out.close();
@@ -129,17 +593,15 @@ bool EmuGen::createInstructionList(const std::string &path)
       return false;
    }
 
-   for (auto &group : m_ast.opcodes) {
-      for (auto &opcode : group.opcodes) {
-         m_instructionList[opcode.disasm.name.value] = &opcode;
-      }
-   }
+   out << "enum class InstructionID {" << std::endl;
 
-   out << "enum InstructionList {" << std::endl;
+   out << "   Unknown," << std::endl;
 
    for (auto &instr : m_instructionList) {
-      out << "   " << getSafeFunctionName(instr.first) << " = " << instr.second->id.value << "," << std::endl;
+      out << "   " << getSafeFunctionName(instr.first) << "," << std::endl;
    }
+
+   out << "   InstructionMax," << std::endl;
 
    out << "};" << std::endl;
 
@@ -148,7 +610,7 @@ bool EmuGen::createInstructionList(const std::string &path)
    return true;
 }
 
-bool EmuGen::createInstructionTableHeader(const std::string &path)
+bool EmuGen::createStubsHeader(const std::string &path)
 {
    std::fstream out;
    out.open(path, std::ifstream::out);
@@ -158,8 +620,6 @@ bool EmuGen::createInstructionTableHeader(const std::string &path)
       return false;
    }
 
-   out << "extern bool init();" << std::endl;
-   out << "extern bool decode(State *state, Instruction instr);" << std::endl;
    out << std::endl;
 
    for (auto &instr : m_instructionList) {
@@ -181,233 +641,15 @@ bool EmuGen::createInstructionTableSource(const std::string &path)
       return false;
    }
 
-   out << "" << std::endl;
 
-   /* Instruction Function Pointer Type */
-   out << "typedef bool (*__emugen_instr_fptr)(State* state, Instruction instr);" << std::endl;
-   out << std::endl;
+   out << "fptr_t _emugenTable[] = {" << std::endl;
+   out << "   nullptr," << std::endl;
 
-   /* Instruction Table Type */
-   out << "template<int bits>" << std::endl;
-   out << "struct __emugen_table " << std::endl;
-   out << "{" << std::endl;
-   out << "   __emugen_table()" << std::endl;
-   out << "   {" << std::endl;
-   out << "      memset(this, 0, sizeof(__emugen_table<bits>));" << std::endl;
-   out << "   }" << std::endl;
-   out << "" << std::endl;
-   out << "   __emugen_instr_fptr& operator[](int i)" << std::endl;
-   out << "   {" << std::endl;
-   out << "      return m_table[i];" << std::endl;
-   out << "   }" << std::endl;
-   out << std::endl;
-   out << "   __emugen_instr_fptr m_table[1 << bits];" << std::endl;
-   out << "};" << std::endl;
-   out << std::endl;
-   
-   /* Create Opcode Tree */
-   Node *root = nullptr;
-
-   for (auto &group : m_ast.opcodes) {
-      auto primaryField = findInstructionField(group.declaration.primary.value);
-      auto cur = root;
-
-      if (!primaryField) {
-         std::cout << "Unknown instruction field " << group.declaration.primary.value << std::endl;
-         return false;
-      }
-
-      if (!root) {
-         root = new Node();
-         root->id = -1;
-         root->field = primaryField;
-         cur = root;
-      } else if (primaryField != root->field) {
-         std::cout << "Found more than one primary opcode " << group.declaration.primary.value << std::endl;
-         return false;
-      }
-
-      for (auto &secondary : group.declaration.secondary) {
-         auto range = cur->children.equal_range(secondary.first.value);
-         bool found = false;
-
-         for (auto child = range.first; child != range.second; ++child) {
-            if (child->second->field->name.value.compare(secondary.second.value) == 0) {
-               cur = child->second;
-               found = true;
-               break;
-            }
-         }
-
-         if (!found) {
-            Node *node = new Node();
-            node->id = secondary.first.value;
-            node->field = findInstructionField(secondary.second.value);
-            cur->children.insert(std::make_pair(secondary.first.value, node));
-            cur = node;
-
-            if (!node->field) {
-               std::cout << "Unknown instruction field " << secondary.second.value << std::endl;
-               return false;
-            }
-         }
-      }
-
-      for (auto &instr : group.opcodes) {
-         cur->instructions.insert(std::make_pair(instr.id.value, &instr));
-      }
+   for (auto &instr : m_instructionList) {
+      out << "   " << getSafeFunctionName(instr.first) << "," << std::endl;
    }
 
-   /* Declare our opcode tables */
-   std::function<std::pair<int, std::string>(Node*, const std::string &)> declareTable =
-      [&out]
-      (Node *node, const std::string &parent)
-      {
-         out << "static __emugen_table<" << node->field->bitrange.size() << "> ";
-         out << "__emugen_table" << parent << "_" << node->field->name.value << ";" << std::endl;
-         return std::make_pair(node->field->bitrange.size(), parent + "_" + node->field->name.value);
-      };
-
-   std::function<void(Node*, const std::pair<int, std::string> &, const std::string &)> declareTableReference =
-      [&out]
-      (Node *node, const std::pair<int, std::string> &value, const std::string &parent)
-      {
-         out << "static __emugen_table<" << value.first << "> ";
-         out << "&__emugen_table" << parent << "_" << node->field->name.value;
-         out << " = __emugen_table" << value.second << ";" << std::endl;
-      };
-
-   std::function<void(Node*, const std::string &)> checkChildren =
-      [&out, &declareTable, &declareTableReference, &checkChildren]
-      (Node *node, const std::string &parent)
-      {
-         /* Iterate through unique keys */
-         for (auto itr = node->children.begin(); itr != node->children.end(); itr = node->children.upper_bound(itr->first)) {
-            auto biggest = std::make_pair<int, Node *>(0, nullptr);
-            auto range = node->children.equal_range(itr->first);
-            auto name = parent + "_" + node->field->name.value;
-
-            /* Find largest table for key */
-            for (auto jtr = range.first; jtr != range.second; ++jtr) {
-               if (jtr->second->field->bitrange.size() > biggest.first) {
-                  biggest.first = jtr->second->field->bitrange.size();
-                  biggest.second = jtr->second;
-               }
-            }
-
-            /* Create the largest table */
-            auto biggestTable = declareTable(biggest.second, name + "_" + std::to_string(itr->first));
-
-            /* Smaller tables reference largest table */
-            for (auto jtr = range.first; jtr != range.second; ++jtr) {
-               if (jtr->second != biggest.second) {
-                  declareTableReference(jtr->second, biggestTable, name + "_" + std::to_string(itr->first));
-               }
-            }
-
-            /* Check all children */
-            for (auto jtr = range.first; jtr != range.second; ++jtr) {
-               checkChildren(jtr->second, name + "_" + std::to_string(itr->first));
-            }
-         }
-      };
-
-   declareTable(root, "");
-   checkChildren(root, "");
-   out << std::endl;
-
-   std::function<void(ast_arch::Endian, std::vector<Node*>, const std::string &)> decodeFunction =
-      [&out](ast_arch::Endian endian, std::vector<Node *> &nodes, const std::string &parent)
-      {
-         out << "bool decode" << parent << "(State *state, Instruction instr)" << std::endl;
-         out << "{" << std::endl;
-         out << "   unsigned int val = instr.value;" << std::endl;
-         out << "   unsigned int op;" << std::endl;
-         out << std::endl;
-
-         for (auto node : nodes) {
-            unsigned int shift, mask;
-
-            mask = (1ull << node->field->bitrange.size()) - 1;
-
-            if (endian == ast_arch::BigEndian) {
-               shift = 31 - node->field->bitrange.end.value;
-            } else {
-               shift = node->field->bitrange.start.value;
-            }
-
-            out << "   op = (val >> " << shift << ") & 0x" << std::hex << mask << std::dec << ";" << std::endl;
-            out << "   if (" << "__emugen_table" << parent << "_" << node->field->name.value << "[op]) {" << std::endl;
-            out << "      return __emugen_table" << parent << "_" << node->field->name.value << "[op](state, instr);"<<std::endl;
-            out << "   }" << std::endl;
-            out << std::endl;
-         }
-
-         out << "   return false;" << std::endl;
-         out << "}" << std::endl;
-         out << std::endl;
-      };
-
-
-   std::function<void(ast_arch::Endian, Node*, const std::string &)> decodeChildren =
-      [&out, &decodeChildren, &decodeFunction](ast_arch::Endian endian, Node *node, const std::string &parent)
-      {
-         /* Iterate through unique keys */
-         for (auto itr = node->children.begin(); itr != node->children.end(); itr = node->children.upper_bound(itr->first)) {
-            auto biggest = std::make_pair<int, Node *>(0, nullptr);
-            auto range = node->children.equal_range(itr->first);
-            auto name = parent + "_" + node->field->name.value;
-            std::vector<Node *> nodes;
-
-            /* List of children in descending bitrange size */
-            for (auto jtr = range.first; jtr != range.second; ++jtr) {
-               nodes.push_back(jtr->second);
-            }
-
-            std::sort(
-               nodes.begin(),
-               nodes.end(),
-               [](Node *lhs, Node *rhs) {
-                  return lhs->field->bitrange.size() > rhs->field->bitrange.size();
-            });
-
-            /* Create the child decode functions */
-            decodeFunction(endian, nodes, name + "_" + std::to_string(itr->first));
-
-            /* Check all children */
-            for (auto jtr = range.first; jtr != range.second; ++jtr) {
-               decodeChildren(endian, jtr->second, name + "_" + std::to_string(itr->first));
-            }
-         }
-      };
-
-   decodeFunction(m_ast.arch.endian, std::vector<Node *>(1, root), "");
-   decodeChildren(m_ast.arch.endian, root, "");
-
-   std::function<void(Node*, const std::string &)> initOpcodes =
-      [&out, &initOpcodes](Node *node, const std::string &parent)
-      {
-         for (auto &instr : node->instructions) {
-            out << "   __emugen_table" << parent << "_" << node->field->name.value;
-            out << "[" << instr.first << "] = " << getSafeFunctionName(instr.second->disasm.name.value);
-            out << ";" << std::endl;
-         }
-
-         for (auto child : node->children) {
-            out << "   __emugen_table" << parent << "_" << node->field->name.value;
-            out << "[" << child.first << "] = ";
-            out << "decode" << parent << "_" << node->field->name.value << "_" << child.first;
-            out << ";" << std::endl;
-
-            initOpcodes(child.second, parent + "_" + node->field->name.value + "_" + std::to_string(child.first));
-         }
-      };
-
-   out << "bool init()" << std::endl;
-   out << "{" << std::endl;
-   initOpcodes(root, "");
-   out << "   return true;" << std::endl;
-   out << "}" << std::endl;
+   out << "};" << std::endl;
 
    out.close();
    std::cout << "EmuGen: " << path << std::endl;

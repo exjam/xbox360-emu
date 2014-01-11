@@ -8,6 +8,9 @@
     <Filter Include="Generated Files">
       <UniqueIdentifier>{d0aaf9da-32bb-469e-b4df-5f68dc7271eb}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{2d08cb05-d821-418b-a72c-3a88f9d05f8d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ppc\cpu.h">
@@ -16,11 +19,31 @@
     <ClInclude Include="ppc\instructions.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="emugen_instr_list.h">
+    <ClInclude Include="emugen_cpu_info.h">
       <Filter>Generated Files</Filter>
     </ClInclude>
-    <ClInclude Include="emugen_instr_table.h">
+    <ClInclude Include="emugen_instructionid.h">
       <Filter>Generated Files</Filter>
     </ClInclude>
+    <ClInclude Include="emugen_instructions.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="emugen_stubs.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ppc\decoder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="emugen_decoder.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="decoder.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="instructions.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

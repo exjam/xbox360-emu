@@ -1,11 +1,11 @@
 #include "ppc/interpreter.h"
-#include "ppc/instructions.h"
-
-#include "util/log.h"
-#include "util/bits.h"
-#include "util/be/memory.h"
-
 #include "common.h"
+
+#include <ppc/instructions.h>
+
+#include <util/log.h>
+#include <util/bits.h>
+#include <util/memory.h>
 
 #include <limits>
 
@@ -74,7 +74,7 @@ bool stxx(State *state, Instruction instr)
       value = bits::swap(value);
    }
 
-   be::Memory::write<DstType>(ea, value);
+   Memory::write<DstType>(ea, value);
 
    if (Flags & StoreUpdate) {
       gpr(instr.rA) = ea;
@@ -228,7 +228,7 @@ bool stmw(State *state, Instruction instr)
    auto r = instr.rS;
 
    while (r <= 31) {
-      be::Memory::write(ea, gprw(r));
+      Memory::write(ea, gprw(r));
       r  += 1;
       ea += 4;
    }
@@ -247,7 +247,7 @@ bool stsw(State *state, Instruction instr, uint64_t ea, uint64_t n)
          r = (r + 1) % 32;
       }
 
-      be::Memory::write<uint8_t>(ea, (gpr(r) >> (24 - i)) & 0xFF);
+      Memory::write<uint8_t>(ea, (gpr(r) >> (24 - i)) & 0xFF);
 
       i += 8;
 

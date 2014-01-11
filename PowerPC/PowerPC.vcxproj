@@ -19,10 +19,18 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="emugen_instr_list.h" />
-    <ClInclude Include="emugen_instr_table.h" />
+    <ClInclude Include="emugen_cpu_info.h" />
+    <ClInclude Include="emugen_decoder.h" />
+    <ClInclude Include="emugen_instructionid.h" />
+    <ClInclude Include="emugen_instructions.h" />
+    <ClInclude Include="emugen_stubs.h" />
     <ClInclude Include="ppc\cpu.h" />
+    <ClInclude Include="ppc\decoder.h" />
     <ClInclude Include="ppc\instructions.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="decoder.cpp" />
+    <ClCompile Include="instructions.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{B92F76C8-E668-41D5-AC7B-CA7E552E9CFF}</ProjectGuid>
@@ -76,7 +84,7 @@
     <IncludePath>../Common;.;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>../Common;.;$(IncludePath)</IncludePath>
+    <IncludePath>../Common;../tools/EmuGen;.;$(IncludePath)</IncludePath>
     <CustomBuildBeforeTargets>
     </CustomBuildBeforeTargets>
   </PropertyGroup>

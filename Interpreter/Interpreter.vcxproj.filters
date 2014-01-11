@@ -14,28 +14,28 @@
     <ClCompile Include="interpreter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="interpreter_fpu.cpp">
+    <ClCompile Include="alu.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="interpreter_store.cpp">
+    <ClCompile Include="cpu.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="interpreter_load.cpp">
+    <ClCompile Include="flow.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="interpreter_alu.cpp">
+    <ClCompile Include="fpu.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="interpreter_flow.cpp">
+    <ClCompile Include="kernel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="interpreter_cpu.cpp">
+    <ClCompile Include="load.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="interpreter_mmu.cpp">
+    <ClCompile Include="mmu.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="interpreter_kernel.cpp">
+    <ClCompile Include="store.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

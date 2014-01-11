@@ -159,6 +159,7 @@
   <ItemGroup>
     <ClInclude Include="ast.h" />
     <ClInclude Include="emugen.h" />
+    <ClInclude Include="emugen_types.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

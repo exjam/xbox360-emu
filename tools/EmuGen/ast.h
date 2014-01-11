@@ -129,13 +129,17 @@ struct ast_array {
 
 struct ast_reg_type {
    ast_symbol type;
-   ast_array array;
-   ast_bitfield bitfield;
+   std::optional<ast_array> array;
+   std::optional<ast_bitfield> bitfield;
 
    template<typename Sequence>
    void construct(Sequence& ps)
    {
       type = ps.first;
+
+      if (type.value.find("int") != std::string::npos) {
+         type.value.append("_t");
+      }
 
       if (ps.second) {
          if (ps.second->first) {
@@ -203,9 +207,26 @@ struct ast_insf_field {
    }
 };
 
+struct ast_opcd_disasm_reg {
+   char prefix;
+   ast_symbol name;
+
+   template<typename Sequence>
+   void construct(Sequence& ps)
+   {
+      if (ps.first) {
+         prefix = *ps.first;
+      } else {
+         prefix = 0;
+      }
+
+      name = ps.second;
+   }
+};
+
 struct ast_opcd_disasm {
    ast_symbol name;
-   std::vector<ast_symbol> operands;
+   std::vector<ast_opcd_disasm_reg> operands;
 
    template<typename Sequence>
    void construct(Sequence& ps)
@@ -217,8 +238,7 @@ struct ast_opcd_disasm {
 
          for (auto ops : ps.second->second) {
             if (ops.first.first == '(') {
-               ops.first.second.value.push_back(')');
-               ops.first.second.value.insert(0, 1, '(');
+               ops.first.second.prefix = '(';
             }
 
             operands.push_back(ops.first.second);
@@ -251,13 +271,19 @@ struct ast_opcd_extra {
 };
 
 struct ast_opcd_def {
+   ast_cat_opcd *category;
+
    ast_number id;
    ast_opcd_disasm disasm;
    std::map<std::string, ast_opcd_extra> extras;
 
+   std::size_t fieldsLen;
+
    template<typename Sequence>
    void construct(Sequence& ps)
    {
+      category = nullptr;
+
       id = ps.first.first.first;
       disasm = ps.first.second;
 

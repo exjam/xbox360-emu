@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="analyse.cpp" />
     <ClCompile Include="kernel.cpp" />
     <ClCompile Include="system.cpp" />
     <ClCompile Include="imports.cpp" />
@@ -81,7 +82,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>../Disassembler;../Interpreter;../Common;../PowerPC;../XexLoader;$(ProjectDir);$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSDK_IncludePath);</IncludePath>
+    <IncludePath>../Disassembler;../Interpreter;../Translator;../Common;../PowerPC;../XexLoader;$(ProjectDir);$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSDK_IncludePath);</IncludePath>
     <LibraryPath>$(OutDir);$(VCInstallDir)lib\amd64;$(VCInstallDir)atlmfc\lib\amd64;$(WindowsSDK_LibraryPath_x64);</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -119,7 +120,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>Disassembler.lib;Interpreter.lib;Common.lib;XexLoader.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>PowerPC.lib;Disassembler.lib;Interpreter.lib;Common.lib;XexLoader.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Bscmake>
       <PreserveSbr>true</PreserveSbr>
