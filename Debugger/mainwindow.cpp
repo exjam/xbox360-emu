@@ -5,6 +5,7 @@
 #include <fstream>
 
 DisassembleView *m_disassembleView;
+xex::Binary binary;
 
 MainWindow::MainWindow(QQuickWindow *window)
     : m_window(window)
@@ -12,7 +13,7 @@ MainWindow::MainWindow(QQuickWindow *window)
    /* Totally legal copy of the game. */
    std::ifstream file;
    file.open(L"D:\\Downloads\\Ultimate_Marvel_vs_Capcom_3_RF_XBOX360\\Default.xex", std::ifstream::in | std::ifstream::binary);
-   m_loader.load(file);
+   m_loader.load(file, binary);
    file.close();
 
    m_disassembleView = new DisassembleView();

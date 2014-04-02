@@ -2,10 +2,9 @@
 #include "util/log.h"
 
 #include <fstream>
+#include <prs/parser.h>
 
-namespace parser
-{
-#include "parser/parser.h"
+using namespace prs;
 
 auto whitespace  = atomic(*(char_(' ') | char_('\t') | char_('\n') | char_('\r')));
 auto letter      = char_range('a', 'z') | char_range('A', 'Z');
@@ -17,7 +16,7 @@ auto hex         = ast<ast_number>() >> atomic(-char_('-') >> string_("0x") >> +
 auto reg_name    = ast<ast_string>() >> atomic(char_('%') >> +(letter | digit | char_('[') | char_(']')));
 auto reg_value   = hex | number;
 
-auto mem_address = char_('[') >> hex >> char_(']');
+auto mem_address = ast<ast_mem_address>() >> (char_('[') >> hex >> char_(']'));
 
 auto reg_set     = ast<ast_reg_set>() >> (reg_name >> char_('=') >> (mem_address | reg_value));
 auto reg_check   = ast<ast_reg_check>() >> (reg_name >> string_("==") >> (mem_address | reg_value));
@@ -54,7 +53,7 @@ bool parseTest(const std::string &path, ast_test &result)
    /* Parse file */
    struct ParseContext
    {
-      decltype(whitespace) ws;
+      decltype(whitespace) whitespace_parser;
    } ctx = { whitespace };
 
    auto pos = file.begin();
@@ -76,5 +75,3 @@ bool parseTest(const std::string &path, ast_test &result)
 
    return true;
 }
-
-}; // namespace parser

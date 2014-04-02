@@ -86,7 +86,7 @@
     <IncludePath>../PowerPC;../Common;.;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>../XexLoader;../PowerPC;../Common;.;$(IncludePath)</IncludePath>
+    <IncludePath>../XboxEmu;../PowerPC;../Common;.;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

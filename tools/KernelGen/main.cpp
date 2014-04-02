@@ -6,8 +6,10 @@
 #include <locale>
 #include <vector>
 #include <map>
-#include "parser/parser.h"
+#include <prs/parser.h>
 #include "util/log.h"
+
+using namespace prs;
 
 std::tr2::sys::path g_kernelRoot;
 
@@ -15,73 +17,49 @@ struct ast_string
 {
    std::string value;
 
-   template<typename Type>
-   void construct(Type& input)
+   template<typename Result>
+   void construct(Result &&result)
    {
-      value = ast_to_string<decltype(value)>(input);
-   }
-};
-
-struct ast_symbol
-{
-   std::string value;
-
-   template<typename Type>
-   void construct(Type& input)
-   {
-      value = ast_to_string<decltype(value)>(input);
+      value = ast_to_string<decltype(value)>(result);
    }
 };
 
 struct ast_number
 {
-   ast_number() : value(0)
-   {
-   }
-   ast_number(int value) : value(value)
-   {
-   }
-
    int value;
 
-   template<typename Char>
-   void construct(std::vector<Char>& chs)
+   template<typename Result>
+   void construct(Result &&result)
    {
-      std::string word;
-
-      for (auto ch : chs) {
-         word.push_back(ch);
-      }
-
-      value = std::stoi(word);
+      value = std::stoi(ast_to_string<std::string>(result));
    }
 };
 
 struct ast_export
 {
-   ast_symbol name;
-   ast_number ordinal;
+   std::string name;
+   int ordinal;
 
-   template<typename Type>
-   void construct(Type& input)
+   template<typename Result>
+   void construct(Result &&result)
    {
-      name = input.first.first;
-      ordinal = input.second;
+      name = std::get<0>(result).value;
+      ordinal = std::get<2>(result).value;
    }
 };
 
 struct ast_libdef
 {
-   ast_string name;
+   std::string name;
    std::map<std::string, int> exports;
 
-   template<typename Type>
-   void construct(Type& input)
+   template<typename Result>
+   void construct(Result &&result)
    {
-      name = input.first.second;
+      name = std::get<1>(result).value;
 
-      for (auto &exp : input.second.second) {
-         exports.insert(std::make_pair(exp.name.value, exp.ordinal.value));
+      for (auto &exp : std::get<3>(result)) {
+         exports.insert(std::make_pair(exp.name, exp.ordinal));
       }
    }
 };
@@ -92,15 +70,13 @@ auto letter     = char_range('a', 'z') | char_range('A', 'Z');
 auto digit      = char_range('0', '9');
 
 auto number     = ast<ast_number>() >> (atomic(+digit));
-auto symbol     = ast<ast_symbol>() >> (atomic((letter | char_('_')) >> *(letter | digit | char_('_'))));
+auto symbol     = ast<ast_string>() >> (atomic((letter | char_('_')) >> *(letter | digit | char_('_'))));
 
 auto lib_name   = ast<ast_string>() >> (atomic(*(letter | digit | char_('.') | char_('_'))));
-auto lib_decl   = string_("LIBRARY") >> lib_name;
 
 auto export_def = ast<ast_export>() >> (symbol >> char_('@') >> number);
-auto exports    = string_("EXPORTS") >> *export_def;
 
-auto def_parser = ast<ast_libdef>() >> (lib_decl >> exports);
+auto def_parser = ast<ast_libdef>() >> (string_("LIBRARY") >> lib_name >> string_("EXPORTS") >> *export_def);
 
 bool parseDef(std::tr2::sys::path path, ast_libdef &ast)
 {
@@ -125,7 +101,7 @@ bool parseDef(std::tr2::sys::path path, ast_libdef &ast)
    /* Parse file */
    struct ParseContext
    {
-      decltype(whitespace) ws;
+      decltype(whitespace) whitespace_parser;
    } ctx = { whitespace };
 
    auto pos = file.begin();

@@ -16,9 +16,7 @@ int main(int argc, char *argv[])
    
    QQmlApplicationEngine engine("Resources/MainWindow.qml");
    MainWindow *window = new MainWindow(qobject_cast<QQuickWindow *>(engine.rootObjects().value(0)));
-
-   ppc::Disassembler::init();
-
+   
    if(!window) {
       qWarning("Error: The root item must be MainWindow");
       return -1;

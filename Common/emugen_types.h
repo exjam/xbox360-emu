@@ -10,21 +10,21 @@ struct InstrEntry
 {
    struct Opcode
    {
-      FieldID::Fields field;
+      Field field;
       unsigned value;
    };
 
    const char *name;
    std::vector<Opcode> opcodes;
-   std::vector<FieldID::Fields> outputs;
-   std::vector<FieldID::Fields> inputs;
-   std::vector<FieldID::Fields> mods;
+   std::vector<Field> outputs;
+   std::vector<Field> inputs;
+   std::vector<Field> mods;
    const char *fullname;
 };
 
 struct DecodeEntry
 {
-   typedef InstructionID(*fptr_t)(Instruction instr);
+   using fptr_t = InstructionID(*)(Instruction instr);
 
    DecodeEntry &operator=(fptr_t decoder)
    {

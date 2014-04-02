@@ -20,8 +20,6 @@ Tester::~Tester()
 
 bool Tester::run(const std::string &root)
 {
-   ppc::Interpreter::init();
-
    m_testRoot = root;
 
    for (auto itr = std::tr2::sys::recursive_directory_iterator(root); itr != std::tr2::sys::recursive_directory_iterator(); ++itr) {

@@ -5,300 +5,334 @@
 #include <vector>
 #include <map>
 #include <utility>
-#include "parser/optional.h"
+#include <prs/optional.h>
 
-struct ast_symbol {
+struct ast_symbol
+{
    std::string value;
 
-   template<typename Type>
-   void construct(Type& input)
+   template<typename Result>
+   void construct(Result &&result)
    {
-      value = ast_to_string<decltype(value)>(input);
+      value = ast_to_string<decltype(value)>(result);
    }
 };
 
-struct ast_string {
+struct ast_string
+{
    std::string value;
 
-   template<typename Type>
-   void construct(Type& input)
+   template<typename Result>
+   void construct(Result &&result)
    {
-      value = ast_to_string<decltype(value)>(input.first.second);
+      value = ast_to_string<decltype(value)>(std::get<1>(result));
    }
 };
 
-struct ast_number {
-   ast_number() : value(0) {}
-   ast_number(int value) : value(value) {}
-
+struct ast_number
+{
    int value;
 
-   template<typename Char>
-   void construct(std::vector<Char>& chs)
+   template<typename Result>
+   void construct(Result &&result)
    {
-      std::string word;
-
-      for (auto ch : chs) {
-         word.push_back(ch);
-      }
-
-      value = std::stoi(word);
+      value = std::stoi(ast_to_string<std::string>(result));
    }
 };
 
-struct ast_char {
-   int ch;
+struct ast_char
+{
+   int value;
 
-   template<typename Sequence>
-   void construct(Sequence& ps)
+   template<typename Result>
+   void construct(Result &&result)
    {
-      ch = ps.first.second;
+      value = std::get<1>(result);
    }
 };
 
-struct ast_bitrange {
-   ast_bitrange() : end(-1) {}
+struct ast_bitrange
+{
+   ast_bitrange() : end(-1)
+   {
+   }
 
-   ast_number start;
-   ast_number end;
+   int start;
+   int end;
 
    int size()
    {
-      return 1 + end.value - start.value;
+      return 1 + end - start;
    }
 
-   template<typename Sequence>
-   void construct(Sequence& ps)
+   template<typename Result>
+   void construct(Result &&result)
    {
-      start = ps.first.value;
+      start = std::get<0>(result).value;
 
-      if (ps.second) {
-         end = ps.second->second.value;
+      if (std::get<1>(result)) {
+         end = std::get<1>(*std::get<1>(result)).value;
       } else {
-         end.value = start.value;
+         end = start;
       }
    }
 };
 
-struct ast_cat_opcd {
-   ast_symbol primary;
-   std::vector<std::pair<ast_number, ast_symbol>> secondary;
+struct ast_cat_opcd
+{
+   std::string primary;
+   std::vector<std::pair<int, std::string>> secondary;
 
-   template<typename Sequence>
-   void construct(Sequence& ps)
+   template<typename Result>
+   void construct(Result &&result)
    {
-      primary = ps.first.first.second;
+      primary = std::get<1>(result).value;
 
-      for (auto p : ps.first.second) {
-         secondary.push_back(std::make_pair(p.first.first.second, p.second));
+      for (auto &sub : std::get<2>(result)) {
+         secondary.push_back(std::make_pair(std::get<1>(sub).value, std::get<3>(sub).value));
       }
    }
 };
 
-struct ast_arch_endian {
+struct ast_arch_endian
+{
    std::string endian;
 
    template<typename Sequence>
-   void construct(Sequence& ps)
+   void construct(Sequence &&xs)
    {
-      endian = ps.second;
+      endian = std::get<2>(xs);
    }
 };
 
-struct ast_bitfield {
-   std::vector<std::pair<ast_symbol, ast_bitrange>> bitfield;
+struct ast_bitfield
+{
+   std::vector<std::pair<std::string, ast_bitrange>> bitfield;
 
-   template<typename Sequence>
-   void construct(Sequence& ps)
+   template<typename Result>
+   void construct(Result &&result)
    {
-      for (auto bf : ps.first.second) {
-         bitfield.push_back(std::make_pair(bf.first.first, bf.second));
+      for (auto &fields : std::get<1>(result)) {
+         bitfield.push_back(std::make_pair(std::get<0>(fields).value, std::get<2>(fields)));
       }
    }
 };
 
-struct ast_array {
-   ast_number size;
+struct ast_array
+{
+   int size;
 
-   template<typename Sequence>
-   void construct(Sequence& ps)
+   template<typename Result>
+   void construct(Result &&result)
    {
-      size = ps.first.second;
+      size = std::get<1>(result).value;
    }
 };
 
-struct ast_reg_type {
-   ast_symbol type;
-   std::optional<ast_array> array;
-   std::optional<ast_bitfield> bitfield;
+struct ast_reg_type
+{
+   std::string type;
+   prs::optional<ast_array> array;
+   prs::optional<ast_bitfield> bitfield;
 
-   template<typename Sequence>
-   void construct(Sequence& ps)
+   template<typename Result>
+   void construct(Result &&result)
    {
-      type = ps.first;
+      type = std::get<0>(result).value;
 
-      if (type.value.find("int") != std::string::npos) {
-         type.value.append("_t");
+      if (type.find("int") != std::string::npos) {
+         type.append("_t");
       }
 
-      if (ps.second) {
-         if (ps.second->first) {
-            array = *ps.second->first;
+      auto &extra = std::get<1>(result);
+
+      if (extra) {
+         if (extra->which == 0) {
+            array = std::get<0>(*extra);
          }
 
-         if (ps.second->second) {
-            bitfield = *ps.second->second;
+         if (extra->which == 1) {
+            bitfield = std::get<1>(*extra);
          }
       }
    }
 };
 
-struct ast_reg_define {
-   ast_symbol name;
+struct ast_reg_define
+{
+   std::string name;
    ast_reg_type type;
 
-   template<typename Sequence>
-   void construct(Sequence& ps)
+   template<typename Result>
+   void construct(Result &&result)
    {
-      name = ps.first.first;
-      type = ps.second;
+      name = std::get<0>(result).value;
+      type = std::get<2>(result);
    }
 };
 
-struct ast_insf_extra {
-   ast_symbol name;
-   std::optional<ast_number> number;
-   std::optional<ast_string> string;
-   std::optional<ast_char> chr;
+struct ast_insf_extra
+{
+   std::string name;
+   prs::optional<int> number;
+   prs::optional<std::string> string;
+   prs::optional<char> chr;
 
-   template<typename Sequence>
-   void construct(Sequence& ps)
+   template<typename Result>
+   void construct(Result &&result)
    {
-      name = ps.first.first;
+      name = std::get<0>(result).value;
 
-      if (ps.second.first && ps.second.first->first) {
-         number = *ps.second.first->first;
-      } else if (ps.second.first && ps.second.first->second) {
-         string = *ps.second.first->second;
-      } else if (ps.second.second) {
-         chr = *ps.second.second;
+      auto &value = std::get<2>(result);
+
+      switch (value.which) {
+      case 0:
+         number = std::get<0>(value)->value;
+         break;
+      case 1:
+         string = std::get<1>(value)->value;
+         break;
+      case 2:
+         chr = std::get<2>(value)->value;
+         break;
       }
    }
 };
 
-struct ast_insf_field {
-   ast_symbol name;
+struct ast_insf_field
+{
+   std::string name;
    ast_bitrange bitrange;
    std::map<std::string, ast_insf_extra> extras;
 
-   template<typename Sequence>
-   void construct(Sequence& ps)
+   template<typename Result>
+   void construct(Result &&result)
    {
-      name = ps.first.first.first;
-      bitrange = ps.first.second;
+      name = std::get<0>(result).value;
+      bitrange = std::get<2>(result);
 
-      if (ps.second) {
-         extras[ps.second->first.second.name.value] = ps.second->first.second;
+      if (std::get<3>(result)) {
+         auto &extra = *std::get<3>(result);
 
-         for (auto es : ps.second->second) {
-            extras[es.second.name.value] = es.second;
+         extras[std::get<1>(extra).name] = std::get<1>(extra);
+
+         for (auto &ext : std::get<2>(extra)) {
+            extras[std::get<1>(ext).name] = std::get<1>(ext);
          }
       }
    }
 };
 
-struct ast_opcd_disasm_reg {
+struct ast_opcd_disasm_reg
+{
    char prefix;
-   ast_symbol name;
+   std::string name;
 
-   template<typename Sequence>
-   void construct(Sequence& ps)
+   template<typename Result>
+   void construct(Result &&result)
    {
-      if (ps.first) {
-         prefix = *ps.first;
+      if (std::get<0>(result)) {
+         prefix = *std::get<0>(result);
       } else {
          prefix = 0;
       }
 
-      name = ps.second;
+      name = std::get<1>(result).value;
    }
 };
 
-struct ast_opcd_disasm {
-   ast_symbol name;
+struct ast_opcd_disasm
+{
+   std::string name;
    std::vector<ast_opcd_disasm_reg> operands;
 
-   template<typename Sequence>
-   void construct(Sequence& ps)
+   template<typename Result>
+   void construct(Result &&result)
    {
-      name = ps.first;
+      name = std::get<0>(result).value;
 
-      if (ps.second) {
-         operands.push_back(ps.second->first);
+      if (std::get<1>(result)) {
+         auto &regs = *std::get<1>(result);
 
-         for (auto ops : ps.second->second) {
-            if (ops.first.first == '(') {
-               ops.first.second.prefix = '(';
+         operands.push_back(std::get<0>(regs));
+
+         for (auto &reg : std::get<1>(regs)) {
+            if (std::get<0>(reg) == '(') {
+               std::get<1>(reg).prefix = '(';
             }
 
-            operands.push_back(ops.first.second);
+            operands.push_back(std::get<1>(reg));
          }
       }
    }
 };
 
-struct ast_opcd_extra {
-   ast_symbol name;
-   std::optional<ast_number> number;
-   std::optional<ast_string> string;
-   std::optional<ast_char> chr;
+struct ast_opcd_extra
+{
+   std::string name;
+   prs::optional<int> number;
+   prs::optional<std::string> string;
+   prs::optional<char> chr;
 
-   template<typename Sequence>
-   void construct(Sequence& ps)
+   template<typename Result>
+   void construct(Result &&result)
    {
-      name = ps.first;
+      name = std::get<0>(result).value;
 
-      if (ps.second) {
-         if (ps.second->second.first && ps.second->second.first->first) {
-            number = *ps.second->second.first->first;
-         } else if (ps.second->second.first && ps.second->second.first->second) {
-            string = *ps.second->second.first->second;
-         } else if (ps.second->second.second) {
-            chr = *ps.second->second.second;
+      auto &extra = std::get<1>(result);
+
+      if (extra) {
+         auto &value = std::get<1>(*extra);
+
+         switch (value.which) {
+         case 0:
+            number = std::get<0>(value)->value;
+            break;
+         case 1:
+            string = std::get<1>(value)->value;
+            break;
+         case 2:
+            chr = std::get<2>(value)->value;
+            break;
          }
       }
    }
 };
 
-struct ast_opcd_def {
+struct ast_opcd_def
+{
    ast_cat_opcd *category;
 
-   ast_number id;
+   int id;
    ast_opcd_disasm disasm;
    std::map<std::string, ast_opcd_extra> extras;
 
    std::size_t fieldsLen;
 
-   template<typename Sequence>
-   void construct(Sequence& ps)
+   template<typename Result>
+   void construct(Result &&result)
    {
       category = nullptr;
 
-      id = ps.first.first.first;
-      disasm = ps.first.second;
+      id = std::get<0>(result).value;
+      disasm = std::get<2>(result);
 
-      if (ps.second) {
-         extras[ps.second->first.second.name.value] = ps.second->first.second;
+      if (std::get<3>(result)) {
+         auto &ext = *std::get<3>(result);
 
-         for (auto es : ps.second->second) {
-            extras[es.second.name.value] = es.second;
+         extras[std::get<1>(ext).name] = std::get<1>(ext);
+
+         for (auto &ex : std::get<2>(ext)) {
+            extras[std::get<1>(ex).name] = std::get<1>(ex);
          }
       }
    }
 };
 
-struct ast_arch {
-   enum Endian {
+struct ast_arch
+{
+   enum Endian
+   {
       Invalid,
       BigEndian,
       LittleEndian
@@ -306,12 +340,12 @@ struct ast_arch {
 
    Endian endian;
 
-   template<typename Sequence>
-   void construct(Sequence& ps)
+   template<typename Result>
+   void construct(Result &&result)
    {
-      if (ps.endian.compare("BigEndian") == 0) {
+      if (result.endian.compare("BigEndian") == 0) {
          endian = BigEndian;
-      } else if (ps.endian.compare("LittleEndian") == 0) {
+      } else if (result.endian.compare("LittleEndian") == 0) {
          endian = LittleEndian;
       } else {
          endian = Invalid;
@@ -319,63 +353,66 @@ struct ast_arch {
    }
 };
 
-struct ast_reg {
+struct ast_reg
+{
    std::vector<ast_reg_define> registers;
 
-   template<typename Sequence>
-   void construct(Sequence& ps)
+   template<typename Result>
+   void construct(Result &&result)
    {
-      registers = ps;
+      registers = result;
    }
 };
 
-struct ast_insf {
+struct ast_insf
+{
    std::vector<ast_insf_field> fields;
 
-   template<typename Sequence>
-   void construct(Sequence& ps)
+   template<typename Result>
+   void construct(Result &&result)
    {
-      fields = ps;
+      fields = result;
    }
 };
 
-struct ast_opcd {
+struct ast_opcd
+{
    ast_cat_opcd declaration;
    std::vector<ast_opcd_def> opcodes;
 
-   template<typename Sequence>
-   void construct(Sequence& ps)
+   template<typename Result>
+   void construct(Result &&result)
    {
-      declaration = ps.first;
-      opcodes = ps.second;
+      declaration = std::get<0>(result);
+      opcodes = std::get<1>(result);
    }
 };
 
-struct ast_root {
+struct ast_root
+{
    ast_arch arch;
    ast_reg reg;
    ast_insf insf;
    std::vector<ast_opcd> opcodes;
 
-   template<typename Sequence>
-   void construct(Sequence& ps)
+   template<typename Result>
+   void construct(Result &&result)
    {
-      for (auto p : ps) {
-         if (p.first) {
-            if (p.first->first) {
-               if (p.first->first->first) {
-                  arch = p.first->first->first->second;
-               } else if (p.first->first->second) {
-                  reg = p.first->first->second->second;
-               }
-            } else if (p.first->second) {
-               insf = p.first->second->second;
-            }
-         }
-
-         if (p.second) {
-            opcodes.push_back(*p.second);
-         }
+      for (auto &value : result) {
+         switch (value.which) {
+         case 0:
+            arch = std::get<1>(*std::get<0>(value));
+            break;
+         case 1:
+            reg = std::get<1>(*std::get<1>(value));
+            break;
+         case 2:
+            insf = std::get<1>(*std::get<2>(value));
+            break;
+         case 3:
+            opcodes.push_back(*std::get<3>(value));
+            break;
+         };
       }
    }
 };

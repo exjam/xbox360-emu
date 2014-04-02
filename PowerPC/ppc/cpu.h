@@ -11,10 +11,10 @@
 namespace ppc
 {
 
-typedef uint64_t reg_t;
-typedef uint64_t ureg_t;
-typedef int64_t sreg_t;
-typedef double freg_t;
+using reg_t  = uint64_t;
+using ureg_t = uint64_t;
+using sreg_t = int64_t;
+using freg_t = double;
 
 enum class Exceptions {
    SystemReset                  = 0x100,

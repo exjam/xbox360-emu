@@ -17,10 +17,6 @@ namespace ppc
 namespace Interpreter
 {
 
-void kernelCall(State *state, uint64_t fptr)
-{
-}
-
 typedef uint64_t (*callKernelUnkArg)(...);
 
 /* Kernel Function Call */
@@ -53,6 +49,7 @@ bool krncall(State *state, Instruction instr)
 
    callKernelUnkArg func = reinterpret_cast<callKernelUnkArg>(fptr);
 
+   /* Should probably come up with a better way to do this, msvc64 y u no inline asm */
    if (args == 0) {
       state->reg.gpr[3] = func();
    } else if (args == 1) {

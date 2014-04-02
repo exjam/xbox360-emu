@@ -24,9 +24,15 @@
     <ClCompile Include="system.cpp" />
     <ClCompile Include="imports.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="xex\loader.cpp" />
+    <ClCompile Include="xex\rijndael-alf-fst.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="system.h" />
+    <ClInclude Include="xex\aes.h" />
+    <ClInclude Include="xex\optionalheaders.h" />
+    <ClInclude Include="xex\rijndael-alg-fst.h" />
+    <ClInclude Include="xex\xex.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{C68F7DE4-DD05-4BBF-94D4-F1697BF66EF3}</ProjectGuid>
@@ -82,7 +88,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>../Disassembler;../Interpreter;../Translator;../Common;../PowerPC;../XexLoader;$(ProjectDir);$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSDK_IncludePath);</IncludePath>
+    <IncludePath>../prslib;../Disassembler;../Interpreter;../Translator;../Common;../PowerPC;../XexLoader;$(ProjectDir);$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSDK_IncludePath);</IncludePath>
     <LibraryPath>$(OutDir);$(VCInstallDir)lib\amd64;$(VCInstallDir)atlmfc\lib\amd64;$(WindowsSDK_LibraryPath_x64);</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -120,7 +126,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>PowerPC.lib;Disassembler.lib;Interpreter.lib;Common.lib;XexLoader.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>PowerPC.lib;Disassembler.lib;Interpreter.lib;Common.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Bscmake>
       <PreserveSbr>true</PreserveSbr>

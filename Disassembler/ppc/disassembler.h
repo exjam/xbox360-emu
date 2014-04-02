@@ -11,15 +11,40 @@ namespace ppc
 namespace Disassembler
 {
 
+struct Result
+{
+   enum Type
+   {
+      Invalid,
+      Register,
+      Constant,
+      ConstantSigned,
+      Address
+   };
+
+   struct Arg
+   {
+      Type type;
+      std::string text;
+
+      union
+      {
+         uint64_t address;
+         uint64_t constant;
+         int64_t constantSigned;
+      };
+   };
+
+   std::string name;
+   std::string fullname;
+   std::string disasm;
+   std::vector<Arg> args;
+};
+
 struct State
 {
    uint64_t cia;
-
-   struct {
-      std::string code;
-      std::string name;
-      std::string operands;
-   } result;
+   Result result;
 };
 
 bool decode(State *state, Instruction instr);

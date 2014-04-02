@@ -1,4 +1,4 @@
-#include "parser/parser.h"
+#include <prs/parser.h>
 #include "emugen.h"
 #include "ast.h"
 
@@ -7,18 +7,20 @@
 
 ast_cat_opcd *g_curCategory = nullptr;
 
+using namespace prs;
+
 /* Character Types */
-auto whitespace = atomic(*(char_(' ') | char_('\t') | char_('\n') | char_('\r')));
-auto letter     = char_range('a', 'z') | char_range('A', 'Z');
-auto digit      = char_range('0', '9');
+auto whitespace    = atomic(*(char_(' ') | char_('\t') | char_('\n') | char_('\r')));
+auto letter        = char_range('a', 'z') | char_range('A', 'Z');
+auto digit         = char_range('0', '9');
 
 /* Data Types */
-auto number     = ast<ast_number>()   >> atomic(+digit);
-auto bitrange   = ast<ast_bitrange>() >> atomic(number >> -(string_("...") >> number));
-auto chr        = ast<ast_char>()     >> atomic(char_('\'') >> char_any() >> char_('\''));
-auto str        = ast<ast_string>()   >> atomic(char_('"') >> +(!char_('"') >> char_any()) >> char_('"'));
-auto symbol     = ast<ast_symbol>()   >> atomic((letter | char_('_')) >> *(letter | digit | char_('_')));
-auto name       = ast<ast_symbol>()   >> atomic((letter | char_('_')) >> *(letter | digit | char_('_') | char_('.')));
+auto number        = ast<ast_number>()   >> atomic(+digit);
+auto bitrange      = ast<ast_bitrange>() >> atomic(number >> -(string_("...") >> number));
+auto chr           = ast<ast_char>()     >> atomic(char_('\'') >> char_any() >> char_('\''));
+auto str           = ast<ast_string>()   >> atomic(char_('"') >> +(!char_('"') >> char_any()) >> char_('"'));
+auto symbol        = ast<ast_symbol>()   >> atomic((letter | char_('_')) >> *(letter | digit | char_('_')));
+auto name          = ast<ast_symbol>()   >> atomic((letter | char_('_')) >> *(letter | digit | char_('_') | char_('.')));
 
 /* Register Types */
 auto type_intb     = ast<ast_symbol>()      >> atomic(-char_('u') >> string_("int") >> +digit);
@@ -83,7 +85,7 @@ bool EmuGen::parseFile(const std::string &path)
 
    /* Parse file */
    struct ParseContext {
-      decltype(whitespace) ws;
+      decltype(whitespace) whitespace_parser;
    } ctx = { whitespace };
 
    auto pos = file.begin();

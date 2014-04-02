@@ -1,0 +1,10 @@
+dcbf
+dcbst
+dcbt
+dcbtst
+dcbz
+eciwx
+ecowx
+eieio
+icbi
+isync

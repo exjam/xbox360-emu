@@ -3,36 +3,28 @@
 #include <ppc/interpreter.h>
 #include <ppc/instructions.h>
 #include <util/memory.h>
-#include <parser/parser.h>
+#include <prs/parser.h>
 #include <kernel.h>
 
 #include <Windows.h>
 #include <fstream>
 #include <map>
 
+using namespace prs;
+
 struct ast_number
 {
-   ast_number() : value(0)
-   {
-   }
-
-   ast_number(int value) : value(value)
-   {
-   }
-
    int value;
 
-   template<typename Char>
-   void construct(std::vector<Char>& chs)
+   template<typename Result>
+   void construct(Result &&result)
    {
-      std::string word;
+      auto str = ast_to_string<std::string>(result);
 
-      for (auto ch : chs) {
-         word.push_back(ch);
-      }
-
-      if (word.size()) {
-         value = std::stoi(word);
+      if (str.size()) {
+         value = std::stoi(str);
+      } else {
+         value = 0;
       }
    }
 };
@@ -41,29 +33,29 @@ struct ast_symbol
 {
    std::string value;
 
-   template<typename Type>
-   void construct(Type& input)
+   template<typename Result>
+   void construct(Result &&result)
    {
-      value = ast_to_string<decltype(value)>(input);
+      value = ast_to_string<decltype(value)>(result);
    }
 };
 
 struct ast_decl
 {
-   ast_number ordinal;
-   ast_symbol name;
-   ast_number argCount;
+   int ordinal;
+   std::string name;
+   int argCount;
 
-   template<typename Type>
-   void construct(Type& input)
+   template<typename Result>
+   void construct(Result &&result)
    {
-      ordinal = input.first.first.first;
-      name = input.first.second;
+      ordinal = std::get<0>(result).value;
+      name = std::get<2>(result).value;
 
-      if (input.second) {
-         argCount = input.second->second;
+      if (std::get<3>(result)) {
+         argCount = std::get<1>(*std::get<3>(result)).value;
       } else {
-         argCount.value = -1;
+         argCount = -1;
       }
    }
 };
@@ -78,13 +70,14 @@ struct ast_krn
 
    std::map<int, Declaration> decls;
 
-   void construct(std::vector<ast_decl>& input)
+   template<typename Result>
+   void construct(Result &&result)
    {
-      for (auto &decl : input) {
+      for (auto &decl : result) {
          Declaration d;
-         d.name = decl.name.value;
-         d.args = decl.argCount.value;
-         decls.insert(std::make_pair(decl.ordinal.value, d));
+         d.name = decl.name;
+         d.args = decl.argCount;
+         decls.insert(std::make_pair(decl.ordinal, d));
       }
    }
 };
@@ -124,7 +117,7 @@ static bool parseKernelDeclarations(std::string path, ast_krn &krn)
    /* Parse file */
    struct ParseContext
    {
-      decltype(whitespace) ws;
+      decltype(whitespace) whitespace_parser;
    } ctx = { whitespace };
 
    auto pos = file.begin();
@@ -155,7 +148,6 @@ x64 calling convention:
 rcx, rdx, r8, r9, stack ...
 return rax
 */
-
 
 typedef void (*fpEmuInitKernel)(IKernel *kernel);
 

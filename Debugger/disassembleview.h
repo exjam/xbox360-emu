@@ -3,8 +3,8 @@
 
 #include <QObject>
 
-#include "ppc/disassembler.h"
-#include "util/be/memory.h"
+#include <ppc/disassembler.h>
+#include <util/memory.h>
 
 class DisassembleView : public QObject
 {
@@ -61,7 +61,7 @@ public:
       disState.cia = address;
       ins.value = Memory::read<uint32_t>(disState.cia);
       ppc::Disassembler::decode(&disState, ins);
-      return QString::fromStdString(ppc::Disassembler::toString(&disState));
+      return QString::fromStdString("abc");
    }
 
    Q_INVOKABLE QString comment(quint32 index) const {

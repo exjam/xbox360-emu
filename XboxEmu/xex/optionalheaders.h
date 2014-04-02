@@ -126,11 +126,30 @@ struct BaseFileFormat : public OptionalHeader
    Compression compression;
 };
 
-struct BaseReference : public OptionalHeader          { static const Headers id = Headers::BaseReference; };
-struct DeltaPatchDescriptor : public OptionalHeader   { static const Headers id = Headers::DeltaPatchDescriptor; };
-struct BoundingPath : public OptionalHeader           { static const Headers id = Headers::BoundingPath; };
-struct DeviceId : public OptionalHeader               { static const Headers id = Headers::DeviceId; };
-struct OriginalBaseAddress : public OptionalHeader    { static const Headers id = Headers::OriginalBaseAddress; };
+struct BaseReference : public OptionalHeader
+{
+   static const Headers id = Headers::BaseReference;
+};
+
+struct DeltaPatchDescriptor : public OptionalHeader
+{
+   static const Headers id = Headers::DeltaPatchDescriptor;
+};
+
+struct BoundingPath : public OptionalHeader
+{
+   static const Headers id = Headers::BoundingPath;
+};
+
+struct DeviceId : public OptionalHeader
+{
+   static const Headers id = Headers::DeviceId;
+};
+
+struct OriginalBaseAddress : public OptionalHeader
+{
+   static const Headers id = Headers::OriginalBaseAddress;
+};
 
 struct EntryPoint : public OptionalHeader
 {
@@ -196,8 +215,15 @@ struct ChecksumTimestamp : public OptionalHeader
    uint32_t timestamp;
 };
 
-struct EnabledForCallcap : public OptionalHeader { static const Headers id = Headers::EnabledForCallcap; };
-struct EnabledForFastcap : public OptionalHeader { static const Headers id = Headers::EnabledForFastcap; };
+struct EnabledForCallcap : public OptionalHeader
+{
+   static const Headers id = Headers::EnabledForCallcap;
+};
+
+struct EnabledForFastcap : public OptionalHeader
+{
+   static const Headers id = Headers::EnabledForFastcap;
+};
 
 struct OriginalPeName : public OptionalHeader
 {
@@ -250,7 +276,10 @@ struct DefaultStackSize : public OptionalHeader
    uint32_t size;
 };
 
-struct DefaultFilesystemCacheSize : public OptionalHeader { static const Headers id = Headers::DefaultFilesystemCacheSize; };
+struct DefaultFilesystemCacheSize : public OptionalHeader
+{
+   static const Headers id = Headers::DefaultFilesystemCacheSize;
+};
 
 struct DefaultHeapSize : public OptionalHeader
 {
@@ -259,7 +288,10 @@ struct DefaultHeapSize : public OptionalHeader
    uint32_t size;
 };
 
-struct PageHeapSizeandFlags : public OptionalHeader { static const Headers id = Headers::PageHeapSizeandFlags; };
+struct PageHeapSizeandFlags : public OptionalHeader
+{
+   static const Headers id = Headers::PageHeapSizeandFlags;
+};
 
 struct SystemFlags : public OptionalHeader
 {
@@ -320,8 +352,15 @@ struct ExecutionInfo : public OptionalHeader
    uint32_t saveGameId;
 };
 
-struct ServiceIdList : public OptionalHeader { static const Headers id = Headers::ServiceIdList; };
-struct TitleWorkspaceSize : public OptionalHeader { static const Headers id = Headers::TitleWorkspaceSize; };
+struct ServiceIdList : public OptionalHeader
+{
+   static const Headers id = Headers::ServiceIdList;
+};
+
+struct TitleWorkspaceSize : public OptionalHeader
+{
+   static const Headers id = Headers::TitleWorkspaceSize;
+};
 
 struct GameRatings : public OptionalHeader
 {
@@ -348,8 +387,15 @@ struct LanKey : public OptionalHeader
    uint8_t key[16];
 };
 
-struct Xbox360Logo : public OptionalHeader { static const Headers id = Headers::Xbox360Logo; };
-struct MultidiscMediaIds : public OptionalHeader { static const Headers id = Headers::MultidiscMediaIds; };
+struct Xbox360Logo : public OptionalHeader
+{
+   static const Headers id = Headers::Xbox360Logo;
+};
+
+struct MultidiscMediaIds : public OptionalHeader
+{
+   static const Headers id = Headers::MultidiscMediaIds;
+};
 
 struct AlternateTitleIds : public OptionalHeader
 {
@@ -358,8 +404,13 @@ struct AlternateTitleIds : public OptionalHeader
    std::vector<uint32_t> ids;
 };
 
-struct AdditionalTitleMemory : public OptionalHeader { static const Headers id = Headers::AdditionalTitleMemory; };
-struct ExportsByName : public OptionalHeader { static const Headers id = Headers::ExportsByName; };
+struct AdditionalTitleMemory : public OptionalHeader {
+   static const Headers id = Headers::AdditionalTitleMemory;
+};
+
+struct ExportsByName : public OptionalHeader {
+   static const Headers id = Headers::ExportsByName;
+};
 
 #pragma pack(pop)
 

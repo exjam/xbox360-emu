@@ -2,11 +2,15 @@
 
 #include <util/memory.h>
 #include <util/bits.h>
+#include <util/log.h>
 
 #include <ppc/cpu.h>
+#include <ppc/disassembler.h>
 #include <ppc/instructions.h>
 
-#include <queue>
+#include <set>
+#include <fstream>
+#include <algorithm>
 
 /* Returns true if instruction is a BasicBlock terminator */
 bool isTerminator(ppc::Instruction instr)
@@ -107,7 +111,12 @@ BasicBlock getBasicBlock(uint64_t start, uint64_t end = 0)
             bb.successors.push_back(pos + 4);
          }
 
-         break;
+         if (isConditionalBranch(instr) && bb.successors.size() == 1) {
+            //fuck this hype
+            bb.successors.clear();
+         } else {
+            break;
+         }
       }
 
       pos += 4;
@@ -119,32 +128,52 @@ BasicBlock getBasicBlock(uint64_t start, uint64_t end = 0)
 struct Function
 {
    uint64_t start;
+   uint64_t end;
    std::vector<BasicBlock> blocks;
 };
 
 bool System::analyse(uint64_t start)
 {
    std::vector<uint64_t> visited;
-   std::queue<uint64_t> targets;
+   std::set<uint64_t> targets;
    Function func;
 
-   func.start = 0x82b1dde0;
+   func.start = start;
+   func.end = start;
 
-   targets.push(func.start);
+   targets.insert(func.start);
 
    while (targets.size()) {
-      auto target = targets.front();
+      auto target = *targets.begin();
 
-      targets.pop();
+      if (target > func.end + 4) {
+         //FUK U?
+      }
+
+      targets.erase(targets.begin());
       
       if (std::find(visited.begin(), visited.end(), target) != visited.end()) {
          continue;
       }
 
       BasicBlock bb = getBasicBlock(target);
+
+      if (bb.end > func.end) {
+         func.end = bb.end;
+      }
       
       for (auto succ : bb.successors) {
-         targets.push(succ);
+         /* If before function then its a call */
+         if (succ < start) {
+            continue;
+         }
+
+         /* If after function ... how do we find end? */
+         /* If there is a gap in the code! */
+         /* Unfortunately we cannot do that until we have "discovered" ALL basic blocks */
+         /* Also dynamic switches might fuck it up? */
+
+         targets.insert(succ);
       }
 
       visited.push_back(target);
@@ -153,11 +182,104 @@ bool System::analyse(uint64_t start)
 
    for (auto &block : func.blocks) {
       for (auto &other : func.blocks) {
-         if (block.start < other.start && block.end > other.end) {
-            block = getBasicBlock(block.start, other.start);
+         if (&block == &other) {
+            continue;
+         }
+
+         if (block.start >= other.start && block.start <= other.end) {
+            other.end = block.start - 4;
+            other.successors.clear();
+            other.successors.push_back(block.start);
          }
       }
    }
+
+   xDebug() << "FUNCTION " << Log::hex(func.start);
+   
+   for (auto &block : func.blocks) {
+      xDebug() << "BLOCK START " << Log::hex(block.start);
+
+      for (auto cia = block.start; cia <= block.end; cia += 4) {
+         ppc::Disassembler::State dis;
+         dis.cia = cia;
+         ppc::Disassembler::decode(&dis, { Memory::read<uint32_t>(cia) });
+         xDebug() << "  " << dis.result.disasm;
+      }
+
+      xDebug() << "BLOCK END " << Log::hex(block.end);
+   }
+
+   std::fstream out;
+
+   out.open("test.dot", std::fstream::out);
+
+   if (!out.is_open()) {
+      std::cout << "Could not open dot graph for writing" << std::endl;
+      return false;
+   }
+
+   for (auto &block : func.blocks) {
+      out << '"';
+
+      if (block.start == func.start) {
+         out << "sub_";
+      } else {
+         out << "loc_";
+      }
+
+      out << std::hex << block.start;
+      out << '"';
+
+      out << " [ ";
+      out << "label = \"";
+
+      for (auto cia = block.start; cia <= block.end; cia += 4) {
+         ppc::Disassembler::State dis;
+         dis.cia = cia;
+         ppc::Disassembler::decode(&dis, { Memory::read<uint32_t>(cia) });
+
+         if (cia != block.start) {
+            out << "\\n";
+         }
+
+         out << dis.result.disasm;
+      }
+
+      out << "\"";
+      out << " ];" << std::endl;
+   }
+
+   for (auto &block : func.blocks) {
+      for (auto &succ : block.successors) {
+         if (std::find_if(func.blocks.begin(), func.blocks.end(), [&succ](BasicBlock &bb){ return bb.start == succ; }) == func.blocks.end()) {
+            continue;
+         }
+
+         out << '"';
+         if (block.start == func.start) {
+            out << "sub_";
+         } else {
+            out << "loc_";
+         }
+
+         out << std::hex << block.start;
+         out << '"';
+
+         out << " -> ";
+
+         out << '"';
+         if (succ == func.start) {
+            out << "sub_";
+         } else {
+            out << "loc_";
+         }
+
+         out << std::hex << succ;
+         out << "\";" << std::endl;
+      }
+   }
+
+   out.close();
 
    return true;
 }

@@ -404,3 +404,21 @@ rc = 31 : name = "name + 'o'"
   30 : fnmsub  +frD, frA, frC, frB             : fullname = "Floating Negative Multiply-Subtract (Double-Precision)", rc
   26 : frsqrte +frD, frB                       : fullname = "Floating Reciprocal Square Root Estimate", rc
   23 : fsel    +frD, frA, frC, frB             : fullname = "Floating Select", rc
+
+//[Aliases]
+//cmpwi   rA, simm           : cmpi    0, 0, rA, simm 
+//cmpw    rA, rB             : cmp     0, 0, rA, rB
+//cmplwi  rA, uimm           : cmpli   0, 0, rA, uimm 
+//cmplw   rA, rB             : cmpl    0, 0, rA, rB
+//cmpwi   crfD, rA, simm     : cmpi    crfD, 0, rA, simm 
+//cmpw    crfD, rA, rB       : cmp     crfD, 0, rA, rB
+//cmplwi  crfD, rA, uimm     : cmpli   crfD, 0, rA, uimm 
+//cmplw   crfD, rA, rB       : cmpl    crfD, 0, rA, rB
+//cmpdi   rA, simm           : cmpi    0, 1, rA, simm 
+//cmpd    rA, rB             : cmp     0, 1, rA, rB
+//cmpldi  rA, uimm           : cmpli   0, 1, rA, uimm 
+//cmpld   rA, rB             : cmpl    0, 1, rA, rB
+//cmpdi   crfD, rA, simm     : cmpi    crfD, 1, rA, simm 
+//cmpd    crfD, rA, rB       : cmp     crfD, 1, rA, rB
+//cmpldi  crfD, rA, uimm     : cmpli   crfD, 1, rA, uimm 
+//cmpld   crfD, rA, rB       : cmpl    crfD, 1, rA, rB

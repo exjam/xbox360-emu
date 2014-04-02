@@ -85,7 +85,7 @@ void System::resumeThread(Thread *thread)
    FILE* fh;
    fopen_s(&fh, "out.txt", "w");
 
-   analyse(state->cia);
+   analyse(0x82F088D0);
 
    for (unsigned i = 0; i < 99999; ++i) {
       ppc::Disassembler::State dis;
@@ -97,8 +97,7 @@ void System::resumeThread(Thread *thread)
 
       xDebug()
          << Log::hex(static_cast<uint32_t>(state->cia))
-         << " " << dis.result.code
-         << " " << dis.result.operands;
+         << " " << dis.result.disasm;
 
       ppc::Interpreter::decode(state, ins);
 

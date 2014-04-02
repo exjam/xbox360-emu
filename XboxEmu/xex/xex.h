@@ -231,7 +231,7 @@ public:
    bool load(std::istream &istr, xex::Binary &binary);
 
 protected:
-   bool loadPe(xex::Binary &binary, uint64_t exeAddress);
+   bool loadPe(xex::Binary &binary, uint32_t exeAddress);
 
    void loadImportLibraries(xex::ImportLibraries &importLibraries);
 

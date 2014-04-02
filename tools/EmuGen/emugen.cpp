@@ -26,35 +26,35 @@ bool EmuGen::run(const std::string &definition, const std::string &outDirectory)
    for (auto &group : m_ast.opcodes) {
       for (auto &instr : group.opcodes) {
          instr.category = &group.declaration;
-         m_instructionList[instr.disasm.name.value] = &instr;
+         m_instructionList[instr.disasm.name] = &instr;
       }
    }
 
    /* Create Tree */
    for (auto &instr : m_instructionList) {
-      std::string xo1 = instr.second->category->primary.value;
+      std::string xo1 = instr.second->category->primary;
       auto *table = &m_rootTable.table[xo1];
 
       for (auto &cat : instr.second->category->secondary) {
-         auto next = table->find(cat.first.value);
+         auto next = table->find(cat.first);
          DecodeTable *nextTable;
 
          if (next == table->end()) {
             nextTable = new DecodeTable();
-            table->insert(std::make_pair(cat.first.value, nextTable));
+            table->insert(std::make_pair(cat.first, nextTable));
          } else {
             assert(next->second->type == DecodeNode::Table);
             nextTable = reinterpret_cast<DecodeTable*>(next->second);
          }
 
-         table = &nextTable->table[cat.second.value];
+         table = &nextTable->table[cat.second];
       }
 
-      assert(table->find(instr.second->id.value) == table->end());
+      assert(table->find(instr.second->id) == table->end());
 
       DecodeInstr *decodeInstr = new DecodeInstr();
       decodeInstr->op = instr.second;
-      table->insert(std::make_pair(instr.second->id.value, decodeInstr));
+      table->insert(std::make_pair(instr.second->id, decodeInstr));
    }
 
    createCpuInfo(outDirectory + "/emugen_cpu_info.h");
@@ -189,7 +189,7 @@ bool EmuGen::createDecoder(const std::string &path)
 
                if (child.second->type == DecodeNode::Instruction) {
                   DecodeInstr *instr = reinterpret_cast<DecodeInstr*>(child.second);
-                  out << "InstructionID::" << getSafeFunctionName(instr->op->disasm.name.value);
+                  out << "InstructionID::" << getSafeFunctionName(instr->op->disasm.name);
                } else if (child.second->type == DecodeNode::Table) {
                   out << "decode" << tableName.str() << "_" << child.first;
                }
@@ -248,11 +248,11 @@ bool EmuGen::createInstructionTable(const std::string &path)
       std::size_t i = 0;
 
       for (; i < instr.second->category->secondary.size(); ++i) {
-         std::size_t digits = numDigits(instr.second->category->secondary[i].first.value);
+         std::size_t digits = numDigits(instr.second->category->secondary[i].first);
          opnumLens[i] = std::max(opnumLens[i], digits);
       }
 
-      opnumLens[i] = std::max(opnumLens[i], static_cast<std::size_t>(numDigits(instr.second->id.value)));
+      opnumLens[i] = std::max(opnumLens[i], static_cast<std::size_t>(numDigits(instr.second->id)));
 
       std::size_t readCount = 0, writeCount = 0, modCount = 0;
       std::size_t readLen = 0, writeLen = 0, modLen = 0;
@@ -260,17 +260,17 @@ bool EmuGen::createInstructionTable(const std::string &path)
       for (auto &opr : instr.second->disasm.operands) {
          if (opr.prefix == '+') {
             writeCount++;
-            writeLen += opr.name.value.length();
+            writeLen += opr.name.length();
          } else {
             readCount++;
-            readLen += opr.name.value.length();
+            readLen += opr.name.length();
          }
       }
 
       for (auto &extra : instr.second->extras) {
          auto found = std::find_if(m_ast.insf.fields.begin(), m_ast.insf.fields.end(),
                                    [&extra](ast_insf_field& field) {
-            return field.name.value.compare(extra.first) == 0;
+            return field.name.compare(extra.first) == 0;
          });
 
          if (found == m_ast.insf.fields.end()) {
@@ -321,7 +321,7 @@ bool EmuGen::createInstructionTable(const std::string &path)
 
          out << "{ ";
 
-         out << "{ " << instr.second->category->primary.value;
+         out << "{ " << instr.second->category->primary;
 
          for (auto &cat : instr.second->category->secondary) {
             out << ", ";
@@ -329,12 +329,12 @@ bool EmuGen::createInstructionTable(const std::string &path)
             out.setf(std::ios::adjustfield, std::ios::right);
             out.width(opnumLens[opnum++]);
 
-            out << cat.first.value;
+            out << cat.first;
 
             out.width(0);
             out.unsetf(std::ios::adjustfield);
 
-            out << " }, { " << cat.second.value;
+            out << " }, { " << cat.second;
          }
 
          out << ", ";
@@ -342,7 +342,7 @@ bool EmuGen::createInstructionTable(const std::string &path)
          out.setf(std::ios::adjustfield, std::ios::right);
          out.width(opnumLens[opnum]);
 
-         out << instr.second->id.value;
+         out << instr.second->id;
 
          out.width(0);
          out.unsetf(std::ios::adjustfield);
@@ -373,7 +373,7 @@ bool EmuGen::createInstructionTable(const std::string &path)
                out << ", ";
             }
 
-            out << opr.name.value;
+            out << opr.name;
             ++count;
          }
 
@@ -399,7 +399,7 @@ bool EmuGen::createInstructionTable(const std::string &path)
                out << ", ";
             }
 
-            out << opr.name.value;
+            out << opr.name;
             ++count;
          }
 
@@ -419,7 +419,7 @@ bool EmuGen::createInstructionTable(const std::string &path)
          for (auto &extra : instr.second->extras) {
             auto found = std::find_if(m_ast.insf.fields.begin(), m_ast.insf.fields.end(),
                                    [&extra](ast_insf_field& field) {
-                                      return field.name.value.compare(extra.first) == 0;
+                                      return field.name.compare(extra.first) == 0;
                                    });
 
             if (found == m_ast.insf.fields.end()) {
@@ -447,7 +447,7 @@ bool EmuGen::createInstructionTable(const std::string &path)
 
       /* Fullname */
       {
-         out << '"' << instr.second->extras["fullname"].string->value << '"';
+         out << '"' << *instr.second->extras["fullname"].string << '"';
       }
 
       out << " }," << std::endl;
@@ -476,28 +476,28 @@ bool EmuGen::createCpuInfo(const std::string &path)
          int pos = 0;
 
          out << "   union {" << std::endl;
-         out << "      " << reg.type.type.value << " value;" << std::endl;
+         out << "      " << reg.type.type << " value;" << std::endl;
          out << "      struct {" << std::endl;
 
          for (auto &field : reg.type.bitfield->bitfield) {
-            int bits = 1 + field.second.end.value - field.second.start.value;
+            int bits = 1 + field.second.end - field.second.start;
 
-            if (pos != field.second.start.value) {
-               out << "         " << reg.type.type.value << " : " << (field.second.start.value - pos) << ";" << std::endl;
-               pos = field.second.start.value;
+            if (pos != field.second.start) {
+               out << "         " << reg.type.type << " : " << (field.second.start - pos) << ";" << std::endl;
+               pos = field.second.start;
             }
 
             pos += bits;
-            out << "         " << reg.type.type.value << " " << field.first.value << " : " << bits << ";" << std::endl;
+            out << "         " << reg.type.type << " " << field.first << " : " << bits << ";" << std::endl;
          }
 
          out << "      };" << std::endl;
-         out << "   } " << reg.name.value << ";" << std::endl;
+         out << "   } " << reg.name << ";" << std::endl;
       } else {
-         out << "   " << reg.type.type.value << " " << reg.name.value;
+         out << "   " << reg.type.type << " " << reg.name;
 
          if (reg.type.array) {
-            out << "[" << reg.type.array->size.value << "]";
+            out << "[" << reg.type.array->size << "]";
          }
 
          out << ";" << std::endl;
@@ -507,25 +507,31 @@ bool EmuGen::createCpuInfo(const std::string &path)
    out << "};" << std::endl;
    out << std::endl;
 
-
-   out << "namespace FieldID {" << std::endl;
-   out << "enum Fields {" << std::endl;
+   out << "namespace Fields {" << std::endl;
+   out << "enum Field {" << std::endl;
 
    for (auto &field : m_ast.insf.fields) {
-      out << "   " << field.name.value << "," << std::endl;
+      out << "   " << field.name << "," << std::endl;
    }
 
    out << "};" << std::endl;
    out << "};" << std::endl;
    out << std::endl;
+   out << "typedef unsigned Field;" << std::endl;
+   out << std::endl;
 
 
    out << "union Instruction {" << std::endl;
    out << "   uint32_t value;" << std::endl;
+   out << std::endl;
+
+   out << "   unsigned get(Field field) const;" << std::endl;
+   out << "   void set(Field field, unsigned value);" << std::endl;
+   out << std::endl;
 
    for (auto &field : m_ast.insf.fields) {
-      int start = field.bitrange.start.value;
-      int end = field.bitrange.end.value;
+      int start = field.bitrange.start;
+      int end = field.bitrange.end;
 
       if (m_ast.arch.endian == ast_arch::BigEndian) {
          start = 31 - start;
@@ -541,7 +547,7 @@ bool EmuGen::createCpuInfo(const std::string &path)
          out << "      uint32_t : " << start << ";" << std::endl;
       }
 
-      out << "      uint32_t " << field.name.value << " : " << (1 + end - start) << ";" << std::endl;
+      out << "      uint32_t " << field.name << " : " << (1 + end - start) << ";" << std::endl;
 
       if (end != 31) {
          out << "      uint32_t : " << (31 - end) << ";" << std::endl;
@@ -569,7 +575,7 @@ bool EmuGen::createStubs(const std::string &path)
    }
    
    for (auto &instr : m_instructionList) {
-      auto fullname = instr.second->extras["fullname"].string->value;
+      auto &fullname = *instr.second->extras["fullname"].string;
 
       out << "/* " << fullname << " */" << std::endl;
       out << "bool " << getSafeFunctionName(instr.first) << "(State *state, Instruction instr)" << std::endl;
@@ -671,7 +677,7 @@ ast_insf_field *EmuGen::findInstructionField(std::string name)
    }
 
    for (auto &field : m_ast.insf.fields) {
-      if (name.compare(field.name.value) == 0) {
+      if (name.compare(field.name) == 0) {
          return &field;
       }
    }

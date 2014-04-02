@@ -23,7 +23,7 @@ Test::~Test()
 /* Load test from file */
 bool Test::load(const std::string &path)
 {
-   parser::ast_test astTest;
+   ast_test astTest;
    std::string tmpElf;
 
    tmpElf = g_tester.getTestRoot() + "\\tmp.elf";
@@ -39,7 +39,7 @@ bool Test::load(const std::string &path)
    }
 
    /* Parse test file for pre&post conditions */
-   if (!parser::parseTest(path, astTest)) {
+   if (!parseTest(path, astTest)) {
       return false;
    }
 
@@ -51,23 +51,23 @@ bool Test::load(const std::string &path)
          cond.type = ConditionType::SetRegister;
 
          cond.target.type = ValueType::Register;
-         cond.target.name = astPre.reg_set->reg_name.value;
+         cond.target.name = astPre.reg_set->reg_name;
 
          if (astPre.reg_set->mem_addr) {
             cond.value.type = ValueType::Address;
-            cond.value.value = astPre.reg_set->mem_addr->value;
+            cond.value.value = *astPre.reg_set->mem_addr;
          } else if (astPre.reg_set->reg_value) {
             cond.value.type = ValueType::Immediate;
-            cond.value.value = astPre.reg_set->reg_value->value;
+            cond.value.value = *astPre.reg_set->reg_value;
          }
       } else if (astPre.mem_set) {
          cond.type = ConditionType::SetMemory;
 
          cond.target.type = ValueType::Address;
-         cond.target.value = astPre.mem_set->mem_addr.value;
+         cond.target.value = astPre.mem_set->mem_addr;
 
          cond.value.type = ValueType::Immediate;
-         cond.value.value = astPre.mem_set->mem_value.value;
+         cond.value.value = astPre.mem_set->mem_value;
       }
 
       m_preconditions.push_back(cond);
@@ -81,14 +81,14 @@ bool Test::load(const std::string &path)
          cond.type = ConditionType::CheckRegister;
 
          cond.target.type = ValueType::Register;
-         cond.target.name = astPost.reg_check->reg_name.value;
+         cond.target.name = astPost.reg_check->reg_name;
 
          if (astPost.reg_check->mem_addr) {
             cond.value.type = ValueType::Address;
-            cond.value.value = astPost.reg_check->mem_addr->value;
+            cond.value.value = *astPost.reg_check->mem_addr;
          } else if (astPost.reg_check->reg_value) {
             cond.value.type = ValueType::Immediate;
-            cond.value.value = astPost.reg_check->reg_value->value;
+            cond.value.value = *astPost.reg_check->reg_value;
          }
       }
 
@@ -111,7 +111,7 @@ bool Test::run()
    if (!checkConditions(state, m_preconditions)) {
       return false;
    }
-
+   
    while (state.cia < m_codeSize) {
       ppc::Instruction instr;
 

@@ -4,19 +4,16 @@
 #include <stdint.h>
 #include <string>
 #include <vector>
-#include "parser/optional.h"
-
-namespace parser
-{
+#include <prs/optional.h>
 
 struct ast_string
 {
    std::string value;
 
-   template<typename Type>
-   void construct(Type &input)
+   template<typename Result>
+   void construct(Result &&result)
    {
-      value = ast_to_string<std::string>(input);
+      value = ast_to_string<std::string>(result);
    }
 };
 
@@ -24,10 +21,10 @@ struct ast_number
 {
    int64_t value;
 
-   template<typename Type>
-   void construct(Type &input)
+   template<typename Result>
+   void construct(Result &&result)
    {
-      auto str_value = ast_to_string<std::string>(input);
+      auto str_value = ast_to_string<std::string>(result);
 
       if (str_value.size() >= 18) {
          value = std::stoull(str_value, 0, 0);
@@ -39,81 +36,108 @@ struct ast_number
    }
 };
 
+struct ast_mem_address
+{
+   int64_t value;
+
+   template<typename Result>
+   void construct(Result &&result)
+   {
+      value = std::get<1>(result).value;
+   }
+};
+
 struct ast_reg_set
 {
-   ast_string reg_name;
-   std::optional<ast_number> reg_value;
-   std::optional<ast_number> mem_addr;
+   std::string reg_name;
+   prs::optional<int64_t> reg_value;
+   prs::optional<int64_t> mem_addr;
 
-   template<typename Type>
-   void construct(Type &input)
+   template<typename Result>
+   void construct(Result &&result)
    {
-      reg_name = input.first.first;
+      reg_name = std::get<0>(result).value;
 
-      if (input.second.first) {
-         mem_addr = input.second.first->first.second;
-      } else if (input.second.second) {
-         reg_value = input.second.second;
+      auto &value = std::get<2>(result);
+
+      switch (value.which) {
+      case 0:
+         mem_addr = std::get<0>(value)->value;
+         break;
+      case 1:
+         reg_value = std::get<1>(value)->value;
+         break;
       }
    }
 };
 
 struct ast_mem_set
 {
-   ast_number mem_addr;
-   ast_number mem_value;
+   int64_t mem_addr;
+   int64_t mem_value;
 
-   template<typename Type>
-   void construct(Type &input)
+   template<typename Result>
+   void construct(Result &&result)
    {
-      mem_addr = input.first.first.first.second;
-      mem_value = input.second;
+      mem_addr = std::get<0>(result).value;
+      mem_value = std::get<2>(result).value;
    }
 };
 
 struct ast_reg_check
 {
-   ast_string reg_name;
-   std::optional<ast_number> reg_value;
-   std::optional<ast_number> mem_addr;
+   std::string reg_name;
+   prs::optional<int64_t> reg_value;
+   prs::optional<int64_t> mem_addr;
 
-   template<typename Type>
-   void construct(Type &input)
+   template<typename Result>
+   void construct(Result &&result)
    {
-      reg_name = input.first.first;
+      reg_name = std::get<0>(result).value;
 
-      if (input.second.first) {
-         mem_addr = input.second.first->first.second;
-      } else if (input.second.second) {
-         reg_value = input.second.second;
+      auto &value = std::get<2>(result);
+
+      switch(value.which)
+      {
+      case 0:
+         mem_addr = std::get<0>(value)->value;
+         break;
+      case 1:
+         reg_value = std::get<1>(value)->value;
+         break;
       }
    }
 };
 
 struct ast_precondition
 {
-   std::optional<ast_reg_set> reg_set;
-   std::optional<ast_mem_set> mem_set;
+   prs::optional<ast_reg_set> reg_set;
+   prs::optional<ast_mem_set> mem_set;
 
-   template<typename Type>
-   void construct(Type &input)
+   template<typename Result>
+   void construct(Result &&result)
    {
-      if (input.second.first) {
-         reg_set = input.second.first;
-      } else {
-         mem_set = input.second.second;
+      auto &value = std::get<3>(result);
+
+      switch (value.which) {
+      case 0:
+         reg_set = std::get<0>(value);
+         break;
+      case 1:
+         mem_set = std::get<1>(value);
+         break;
       }
    }
 };
 
 struct ast_postcondition
 {
-   std::optional<ast_reg_check> reg_check;
+   prs::optional<ast_reg_check> reg_check;
 
-   template<typename Type>
-   void construct(Type &input)
+   template<typename Result>
+   void construct(Result &&result)
    {
-      reg_check = input.second;
+      reg_check = std::get<3>(result);
    }
 };
 
@@ -122,21 +146,22 @@ struct ast_test
    std::vector<ast_precondition> pre;
    std::vector<ast_postcondition> post;
 
-   template<typename Type>
-   void construct(Type &input)
+   template<typename Result>
+   void construct(Result &&result)
    {
-      for (auto &v : input) {
-         if (v.first) {
-            pre.push_back(*v.first);
-         } else {
-            post.push_back(*v.second);
+      for (auto &value : result) {
+         switch (value.which) {
+         case 0:
+            pre.push_back(*std::get<0>(value));
+            break;
+         case 1:
+            post.push_back(*std::get<1>(value));
+            break;
          }
       }
    }
 };
 
 bool parseTest(const std::string &path, ast_test &result);
-
-}; // namespace parser
 
 #endif // ifndef TEST_PARSER_H

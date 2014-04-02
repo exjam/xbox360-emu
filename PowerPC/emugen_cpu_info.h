@@ -82,8 +82,8 @@ struct Registers_ {
    uint64_t iabr;
 };
 
-namespace FieldID {
-enum Fields {
+namespace Fields {
+enum Field {
    xo1,
    xo2,
    xo3,
@@ -141,8 +141,14 @@ enum Fields {
 };
 };
 
+typedef unsigned Field;
+
 union Instruction {
    uint32_t value;
+
+   unsigned get(Field field) const;
+   void set(Field field, unsigned value);
+
 
    struct {
       uint32_t : 26;

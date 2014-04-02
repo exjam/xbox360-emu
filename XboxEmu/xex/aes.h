@@ -6,7 +6,8 @@
 #include <stdint.h>
 
 /* Rijndael / AES in CBC mode */
-class Rijndael {
+class Rijndael
+{
 public:
    Rijndael()
    {
@@ -28,7 +29,7 @@ public:
    {
       rijndaelDecrypt(mRoundKey, mRounds, in, out);
 
-      for (size_t i = 0; i < 16; i++) {
+      for (auto i = 0; i < 16; i++) {
          out[i] ^= mIv[i];
       }
 

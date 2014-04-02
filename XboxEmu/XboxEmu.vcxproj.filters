@@ -9,6 +9,12 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
     </Filter>
+    <Filter Include="Header Files\xex">
+      <UniqueIdentifier>{4f412c0d-9c0d-4349-a090-e6f0ed7c8827}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\xex">
+      <UniqueIdentifier>{54b67736-612f-423a-984e-9d64c1a6b711}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -26,10 +32,28 @@
     <ClCompile Include="analyse.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="xex\loader.cpp">
+      <Filter>Source Files\xex</Filter>
+    </ClCompile>
+    <ClCompile Include="xex\rijndael-alf-fst.cpp">
+      <Filter>Source Files\xex</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="system.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="xex\aes.h">
+      <Filter>Header Files\xex</Filter>
+    </ClInclude>
+    <ClInclude Include="xex\optionalheaders.h">
+      <Filter>Header Files\xex</Filter>
+    </ClInclude>
+    <ClInclude Include="xex\rijndael-alg-fst.h">
+      <Filter>Header Files\xex</Filter>
+    </ClInclude>
+    <ClInclude Include="xex\xex.h">
+      <Filter>Header Files\xex</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
