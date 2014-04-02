@@ -1,0 +1,67 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{7ffc2926-5d5c-45a6-9153-56dee6270eaf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\xex">
+      <UniqueIdentifier>{6992b13a-0c87-4329-9d66-858d404de78a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\xex">
+      <UniqueIdentifier>{7b7cce54-c4e7-4cb9-af54-812ec236691b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\kernel">
+      <UniqueIdentifier>{1f597280-ae65-45f8-8390-80825b2c3395}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\src\analyse.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\imports.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\kernel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\system.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\xex\loader.cpp">
+      <Filter>Source Files\xex</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\xex\rijndael-alf-fst.cpp">
+      <Filter>Source Files\xex</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\src\system.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\xex\aes.h">
+      <Filter>Header Files\xex</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\xex\biginputstream.h">
+      <Filter>Header Files\xex</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\xex\optionalheaders.h">
+      <Filter>Header Files\xex</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\xex\rijndael-alg-fst.h">
+      <Filter>Header Files\xex</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\xex\xex.h">
+      <Filter>Header Files\xex</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\kernel\kernel.h">
+      <Filter>Header Files\kernel</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

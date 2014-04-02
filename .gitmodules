@@ -1,0 +1,3 @@
+[submodule "lib/prslib"]
+	path = lib/prslib
+	url = https://github.com/exjam/prslib.git
