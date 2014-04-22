@@ -1,15 +1,15 @@
-#ifndef THREAD_H
-#define THREAD_H
+#ifndef XBXKRNL_THREAD_H
+#define XBXKRNL_THREAD_H
 
 #include "kernel/kernel.h"
 
-XBXKRNL XDWORD
-ExCreateThread(XLPHANDLE pHandle,
-               XDWORD dwStackSize,
-               XLPDWORD lpThreadId,
-               XLPVOID apiThreadStartup,
-               XLPVOID lpStartAddress,
-               XLPVOID lpParameter,
-               XDWORD dwCreationFlagsMod);
+XBXKRNL uint32_t
+ExCreateThread(ptr32<uint32_t> pHandle,
+               uint32_t dwStackSize,
+               ptr32<uint32_t> lpThreadId,
+               ptr32<void*> apiThreadStartup,
+               ptr32<void*> lpStartAddress,
+               ptr32<void*> lpParameter,
+               uint32_t dwCreationFlagsMod);
 
-#endif
+#endif // ifndef XBXKRNL_THREAD_H

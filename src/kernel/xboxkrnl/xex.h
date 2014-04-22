@@ -1,77 +1,66 @@
-#ifndef XEX_H
-#define XEX_H
+#ifndef XBXKRNL_XEX_H
+#define XBXKRNL_XEX_H
 
 #include "kernel/kernel.h"
 
 void xexInit();
 
 #pragma pack(push, 1)
-
-using XLPLIST_ENTRY = XLP<struct XLIST_ENTRY>;
-
-struct XLIST_ENTRY
+struct KAnsiString // ANSI_STRING
 {
-   XLPLIST_ENTRY Flink;
-   XLPLIST_ENTRY Blink;
+   uint16_t Length;
+   uint16_t MaximumLength;
+   ptr32<int8_t> Buffer;
 };
 
-struct XANSI_STRING
+struct KUnicodeString // UNICODE_STRING
 {
-   XWORD Length;
-   XWORD MaximumLength;
-   XLPCHAR Buffer;
+   uint16_t Length;
+   uint16_t MaximumLength;
+   ptr32<int16_t> Buffer;
 };
 
-struct XUNICODE_STRING
+struct KLdrDataTableEntry
 {
-   XWORD Length;
-   XWORD MaximumLength;
-   XLPWORD Buffer;
-};
-
-using XLPLDR_DATA_TABLE_ENTRY = XLP<struct XLDR_DATA_TABLE_ENTRY>;
-
-struct XLDR_DATA_TABLE_ENTRY
-{
-   XLIST_ENTRY     InLoadOrderLinks;
-   XLIST_ENTRY     InClosureOrderLinks;
-   XLIST_ENTRY     InInitializationOrderLinks;
-   XLPVOID         NtHeadersBase;
-   XLPVOID         ImageBase;
-   XDWORD          SizeOfNtImage;
-   XUNICODE_STRING FullDllName;
-   XUNICODE_STRING BaseDllName;
-   XDWORD          Flags;
-   XDWORD          SizeOfFullImage;
-   XLPVOID         EntryPoint;
-   XWORD           LoadCount;
-   XWORD           ModuleIndex;
-   XLPVOID         DllBaseOriginal;
-   XDWORD          CheckSum;
-   XDWORD          ModuleLoadFlags;
-   XDWORD          TimeDateStamp;
-   XLPVOID         LoadedImports;
-   XLPVOID         XexHeaderBase;
+   LinkedListEntry InLoadOrderLinks;
+   LinkedListEntry InClosureOrderLinks;
+   LinkedListEntry InInitializationOrderLinks;
+   ptr32<void>     NtHeadersBase;
+   ptr32<void>     ImageBase;
+   uint32_t        SizeOfNtImage;
+   KUnicodeString  FullDllName;
+   KUnicodeString  BaseDllName;
+   uint32_t        Flags;
+   uint32_t        SizeOfFullImage;
+   ptr32<void>     EntryPoint;
+   uint16_t        LoadCount;
+   uint16_t        ModuleIndex;
+   ptr32<void>     DllBaseOriginal;
+   uint32_t        CheckSum;
+   uint32_t        ModuleLoadFlags;
+   uint32_t        TimeDateStamp;
+   ptr32<void>     LoadedImports;
+   ptr32<void>     XexHeaderBase;
 
    struct
    {
-      XLPLDR_DATA_TABLE_ENTRY ClosureRoot;
-      XLPLDR_DATA_TABLE_ENTRY TraversalParent;
+      ptr32<KLdrDataTableEntry> ClosureRoot;
+      ptr32<KLdrDataTableEntry> TraversalParent;
    } asEntry;
 };
 
 #pragma pack(pop)
 
-XBXKRNL XLPLDR_DATA_TABLE_ENTRY XexExecutableModuleHandle;
+XBXKRNL ptr32<KLdrDataTableEntry> XexExecutableModuleHandle;
 
-XBXKRNL XDWORD
-XexGetModuleHandle(XLPCHAR lpModuleName,
-                   XLPDWORD lpHandle);
-XBXKRNL XBOOL
-XexCheckExecutablePrivilege(XDWORD priviledge);
+XBXKRNL uint32_t
+XexGetModuleHandle(ptr32<char> lpModuleName,
+                   ptr32<uint32_t> lpHandle);
+XBXKRNL uint64_t
+XexCheckExecutablePrivilege(uint32_t priviledge);
 
-XBXKRNL XPVOID
-RtlImageXexHeaderField(XLPVOID XexHeaderBase,
-                       XDWORD Key);
+XBXKRNL void*
+RtlImageXexHeaderField(ptr32<void> XexHeaderBase,
+                       uint32_t Key);
 
-#endif
+#endif // ifndef XBXKRNL_XEX_H

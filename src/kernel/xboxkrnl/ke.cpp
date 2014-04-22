@@ -2,7 +2,7 @@
 
 #include <Windows.h>
 
-XDWORD KeDebugMonitorData = 0;
+uint32_t KeDebugMonitorData = 0;
 
 enum class ProcessType
 {
@@ -11,33 +11,43 @@ enum class ProcessType
    System = 2
 };
 
-XBXKRNL XBYTE
+XBXKRNL uint8_t
 KeGetCurrentProcessType()
 {
-   return static_cast<XBYTE>(ProcessType::User);
+   return static_cast<uint8_t>(ProcessType::User);
 }
 
-XBXKRNL XDWORD
+XBXKRNL uint64_t
 KeTlsAlloc()
 {
-   return TlsAlloc();
+   return 0;
 }
 
-XBXKRNL XBOOL
-KeTlsFree(XDWORD dwTlsIndex)
+XBXKRNL uint64_t
+KeTlsFree(uint32_t dwTlsIndex)
 {
-   return TlsFree(dwTlsIndex);
+   return 0;
 }
 
-XBXKRNL XPVOID
-KeTlsGetValue(XDWORD dwTlsIndex)
+XBXKRNL uint32_t
+KeTlsGetValue(uint32_t dwTlsIndex)
 {
-   return TlsGetValue(dwTlsIndex);
+   return 0;
 }
 
-XBXKRNL XBOOL
-KeTlsSetValue(XDWORD dwTlsIndex, 
-              XLPVOID lpTlsValue)
+XBXKRNL uint64_t
+KeTlsSetValue(uint32_t dwTlsIndex,
+              uint32_t lpTlsValue)
 {
-   return TlsSetValue(dwTlsIndex, lpTlsValue);
+   return 0;
+}
+
+XBXKRNL XNTSTATUS
+KeWaitForSingleObject(ptr32<void> Object,
+                      uint32_t WaitReason,
+                      uint32_t WaitMode,
+                      uint32_t Alertable,
+                      ptr32<uint64_t> Timeout)
+{
+   return 0;
 }

@@ -1,60 +1,38 @@
 #include "rtl.h"
 #include "common/memory.h"
 
-#include <Windows.h>
+#include <algorithm>
 
-XBXKRNL XVOID
-RtlInitializeCriticalSection(XLPCRITICAL_SECTION lpCriticalSection)
+XBXKRNL void
+RtlInitializeCriticalSection(ptr32<KCriticalSection> lpCriticalSection)
 {
-   if (lpCriticalSection->Synchronization.Magic == 0x1BADBEEF) {
-      return;
-   }
-
-   memset(lpCriticalSection, 0xdd, sizeof(XCRITICAL_SECTION));
-
-   lpCriticalSection->Synchronization.Magic = 0x1BADBEEF;
-   lpCriticalSection->Synchronization.RealCriticalSection = new RTL_CRITICAL_SECTION();
-   InitializeCriticalSection(reinterpret_cast<LPCRITICAL_SECTION>(lpCriticalSection->Synchronization.RealCriticalSection));
+   return RtlInitializeCriticalSectionAndSpinCount(lpCriticalSection, 0);
 }
 
-XBXKRNL XVOID
-RtlInitializeCriticalSectionAndSpinCount(XLPCRITICAL_SECTION lpCriticalSection,
-                                         XDWORD dwSpinCount)
+XBXKRNL void
+RtlInitializeCriticalSectionAndSpinCount(ptr32<KCriticalSection> lpCriticalSection,
+                                         uint32_t dwSpinCount)
 {
-   if (lpCriticalSection->Synchronization.Magic == 0x1BADBEEF) {
-      return;
-   }
-
-   memset(lpCriticalSection, 0xdd, sizeof(XCRITICAL_SECTION));
-
-   lpCriticalSection->Synchronization.Magic = 0x1BADBEEF;
-   lpCriticalSection->Synchronization.RealCriticalSection = new RTL_CRITICAL_SECTION();
-   InitializeCriticalSectionAndSpinCount(reinterpret_cast<LPCRITICAL_SECTION>(lpCriticalSection->Synchronization.RealCriticalSection), dwSpinCount);
+   lpCriticalSection->LockCount = -1;
+   lpCriticalSection->RecursionCount = 0;
+   lpCriticalSection->OwningThread = 0;
+   lpCriticalSection->Header.Absolute = std::max((dwSpinCount + 0xff) >> 8, 0xffu);
 }
 
-XBXKRNL XBOOL
-RtlTryEnterCriticalSection(XLPCRITICAL_SECTION lpCriticalSection)
+XBXKRNL uint64_t
+RtlTryEnterCriticalSection(ptr32<KCriticalSection> lpCriticalSection)
 {
-   if (lpCriticalSection->Synchronization.Magic != 0x1BADBEEF) {
-      RtlInitializeCriticalSection(lpCriticalSection);
-   }
-
-   return TryEnterCriticalSection(reinterpret_cast<LPCRITICAL_SECTION>(lpCriticalSection->Synchronization.RealCriticalSection));
+   return 0;
 }
 
-XBXKRNL XVOID
-RtlEnterCriticalSection(XLPCRITICAL_SECTION lpCriticalSection)
+XBXKRNL void
+RtlEnterCriticalSection(ptr32<KCriticalSection> lpCriticalSection)
 {
-   if (lpCriticalSection->Synchronization.Magic != 0x1BADBEEF) {
-      RtlInitializeCriticalSection(lpCriticalSection);
-   }
 
-   EnterCriticalSection(reinterpret_cast<LPCRITICAL_SECTION>(lpCriticalSection->Synchronization.RealCriticalSection));
 }
 
-XBXKRNL XVOID
-RtlLeaveCriticalSection(XLPCRITICAL_SECTION lpCriticalSection)
+XBXKRNL void
+RtlLeaveCriticalSection(ptr32<KCriticalSection> lpCriticalSection)
 {
-   assert(lpCriticalSection->Synchronization.Magic == 0x1BADBEEF);
-   LeaveCriticalSection(reinterpret_cast<LPCRITICAL_SECTION>(lpCriticalSection->Synchronization.RealCriticalSection));
+
 }

@@ -3,7 +3,7 @@
 
 #include "kernel/kernel.h"
 
-XBXKRNL XVOID
+XBXKRNL void
 EmuInitKernel(IKernel *kernel);
 
 extern IKernel *g_kernel;

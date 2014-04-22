@@ -19,7 +19,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\..\src\common\betype.h" />
     <ClInclude Include="..\..\..\..\src\common\bits.h" />
     <ClInclude Include="..\..\..\..\src\common\emugen_types.h" />
     <ClInclude Include="..\..\..\..\src\common\flags.h" />
@@ -28,6 +27,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\src\common\log.cpp" />
+    <ClCompile Include="..\..\..\..\src\common\memory.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{7DB6DC91-5FBA-45AB-BCB3-F29CEBC4B4B1}</ProjectGuid>

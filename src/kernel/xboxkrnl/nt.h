@@ -1,18 +1,18 @@
-#ifndef NT_H
-#define NT_H
+#ifndef XBXKRNL_NT_H
+#define XBXKRNL_NT_H
 
 #include "kernel/kernel.h"
 
-using XNTSTATUS = XINT;
+using XNTSTATUS = int32_t;
 
 #define XSTATUS_SUCCESS   ((XNTSTATUS)0x00000000L)
 #define XSTATUS_NO_MEMORY ((XNTSTATUS)0xC0000017L)
 
 XBXKRNL XNTSTATUS
-NtAllocateVirtualMemory(XLPDWORD BaseAddress,
-                        XLPDWORD RegionSize,
-                        XDWORD AllocationType,
-                        XDWORD Protect,
-                        XDWORD Flags);
+NtAllocateVirtualMemory(ptr32<uint32_t> lpBaseAddress,
+                        ptr32<uint32_t> lpRegionSize,
+                        uint32_t dwAllocationType,
+                        uint32_t dwProtect,
+                        uint32_t dwFlags);
 
-#endif
+#endif // ifndef XBXKRNL_NT_H

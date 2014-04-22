@@ -6,37 +6,35 @@
 
 #include <Windows.h>
 
-using XLPXEXBINARY = XLP<xex::Binary>;
+ptr32<KLdrDataTableEntry> XexExecutableModuleHandle;
 
-XLP<XLDR_DATA_TABLE_ENTRY> XexExecutableModuleHandle;
-
-XBXKRNL XDWORD
-XexGetModuleHandle(XLPCHAR lpModuleName,
-                   XLPDWORD lpHandle)
+XBXKRNL uint32_t
+XexGetModuleHandle(ptr32<char> lpModuleName,
+                   ptr32<uint32_t> lpHandle)
 {
-   HMODULE handle = GetModuleHandleA(lpModuleName);
+   HMODULE handle = GetModuleHandleA(reinterpret_cast<LPCSTR>(lpModuleName.value));
 
    if (handle) {
-      Memory::write(lpHandle, reinterpret_cast<XDWORD>(handle));
+      Memory::write(lpHandle, reinterpret_cast<uint32_t>(handle));
       return 0;
    } else {
       return -1;
    }
 }
 
-XBXKRNL XBOOL
-XexCheckExecutablePrivilege(XDWORD priviledge)
+XBXKRNL uint64_t
+XexCheckExecutablePrivilege(uint32_t priviledge)
 {
    auto sysFlags = g_kernel->getXexBinary()->header.systemFlags;
    return ((sysFlags.flags >> priviledge) & 1);
 }
 
-XBXKRNL XPVOID
-RtlImageXexHeaderField(XLPVOID XexHeaderBase,
-                       XDWORD Key)
+XBXKRNL void*
+RtlImageXexHeaderField(ptr32<void> XexHeaderBase,
+                       uint32_t Key)
 {
-   XLPXEXBINARY binary;
-   XDWORD length = Key & 0xFF;
+   ptr32<xex::Binary> binary;
+   uint32_t length = Key & 0xFF;
    void *result = nullptr;
 
    binary = XexHeaderBase;
@@ -139,15 +137,15 @@ RtlImageXexHeaderField(XLPVOID XexHeaderBase,
       xDebug() << "Unknown header found 0x" << Log::hex(Key, 8);
    }
 
-   return reinterpret_cast<XPVOID>(reinterpret_cast<uint32_t>(result) + sizeof(binary->header.additionalTitleMemory._read));
+   return reinterpret_cast<void*>(reinterpret_cast<uint32_t>(result) + sizeof(binary->header.additionalTitleMemory._read));
 }
 
 void xexInit()
 {
    xex::Binary *binary = g_kernel->getXexBinary();
-   auto module = new XLDR_DATA_TABLE_ENTRY();
+   auto module = new KLdrDataTableEntry();
 
-   memset(module, 0, sizeof(XLDR_DATA_TABLE_ENTRY));
+   memset(module, 0, sizeof(KLdrDataTableEntry));
    module->XexHeaderBase = bits::swap(binary);
 
    XexExecutableModuleHandle = bits::swap(module);

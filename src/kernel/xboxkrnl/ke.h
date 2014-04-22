@@ -1,15 +1,28 @@
-#ifndef KE_H
-#define KE_H
+#ifndef XBXKRNL_KE_H
+#define XBXKRNL_KE_H
 
 #include "kernel/kernel.h"
+#include "nt.h"
 
-XBXKRNL XDWORD KeDebugMonitorData;
+XBXKRNL uint32_t
+KeDebugMonitorData;
 
-XBXKRNL XBYTE KeGetCurrentProcessType();
+XBXKRNL uint8_t
+KeGetCurrentProcessType();
 
-XBXKRNL XDWORD KeTlsAlloc();
-XBXKRNL XBOOL KeTlsFree(XDWORD dwTlsIndex);
-XBXKRNL XPVOID KeTlsGetValue(XDWORD dwTlsIndex);
-XBXKRNL XBOOL KeTlsSetValue(XDWORD dwTlsIndex, XLPVOID lpTlsValue);
+XBXKRNL uint64_t
+KeTlsAlloc();
 
-#endif
+XBXKRNL uint64_t
+KeTlsFree(uint32_t dwTlsIndex);
+
+XBXKRNL uint32_t
+KeTlsGetValue(uint32_t dwTlsIndex);
+
+XBXKRNL uint64_t
+KeTlsSetValue(uint32_t dwTlsIndex, uint32_t lpTlsValue);
+
+XBXKRNL XNTSTATUS
+KeWaitForSingleObject(ptr32<void> Object, uint32_t WaitReason, uint32_t WaitMode, uint32_t Alertable, ptr32<uint64_t> Timeout);
+
+#endif // ifndef XBXKRNL_KE_H

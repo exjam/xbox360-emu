@@ -1,37 +1,43 @@
-#ifndef XBOX_H
-#define XBOX_H
+#ifndef XBXKRNL_XBOX_H
+#define XBXKRNL_XBOX_H
 
 #include "kernel/kernel.h"
-#include "common/betype.h"
 
 #pragma pack(push, 1)
 
-struct XBOX_HARDWARE_INFO
+struct HardwareInfo
 {
-   BE<XDWORD> Flags;
-   BE<XBYTE>  NumberOfProcessors;
-   BE<XBYTE>  PCIBridgeRevisionID;
-   BE<XBYTE>  Reserved[6];
-   BE<XWORD>  BldrMagic;
-   BE<XWORD>  BldrFlags;
+   uint32_t Flags;
+   uint8_t NumberOfProcessors;
+   uint8_t PCIBridgeRevisionID;
+   uint8_t Reserved[6];
+   uint16_t BldrMagic;
+   uint16_t BldrFlags;
+};
+CHECK_SIZE(HardwareInfo, 0x10);
+
+struct KernelVersion
+{
+   uint16_t Major;
+   uint16_t Minor;
+   uint16_t Build;
+   uint8_t ApprovalType;
+   uint8_t QFE;
 };
 
-struct KERNEL_VERSION
-{
-   BE<XWORD> Major;
-   BE<XWORD> Minor;
-   BE<XWORD> Build;
-   BE<XBYTE> ApprovalType;
-   BE<XBYTE> QFE;
-};
+CHECK_SIZE(KernelVersion, 0x8);
 
 #pragma pack(pop)
 
-XBXKRNL XBOX_HARDWARE_INFO XboxHardwareInfo;
+XBXKRNL HardwareInfo
+XboxHardwareInfo;
 
-XBXKRNL KERNEL_VERSION XboxKrnlVersion;
-XBXKRNL KERNEL_VERSION XboxKrnlBaseVersion;
+XBXKRNL KernelVersion
+XboxKrnlVersion;
+
+XBXKRNL KernelVersion
+XboxKrnlBaseVersion;
 
 void xboxInit();
 
-#endif
+#endif // ifndef XBXKRNL_XBOX_H

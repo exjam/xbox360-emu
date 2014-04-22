@@ -30,12 +30,12 @@
     <ClInclude Include="..\..\..\..\src\common\memory.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\src\common\betype.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\src\common\log.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\src\common\memory.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

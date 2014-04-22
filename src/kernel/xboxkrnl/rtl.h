@@ -3,46 +3,20 @@
 
 #include "kernel/kernel.h"
 
-#pragma pack(push, 1)
+XBXKRNL void
+RtlInitializeCriticalSection(ptr32<KCriticalSection> lpCriticalSection);
 
-struct XCRITICAL_SECTION
-{
-   /* Used for blocking */
-   union
-   {
-      XDWORD RawEvent[4];
+XBXKRNL void
+RtlInitializeCriticalSectionAndSpinCount(ptr32<KCriticalSection> lpCriticalSection,
+                                         uint32_t dwSpinCount);
 
-      struct
-      {
-         XDWORD Magic;
-         struct _RTL_CRITICAL_SECTION *RealCriticalSection;
-      };
-   } Synchronization;
+XBXKRNL uint64_t
+RtlTryEnterCriticalSection(ptr32<KCriticalSection> lpCriticalSection);
 
-   /* Control Entering / Exit for resource */
-   XDWORD LockCount;
-   XDWORD RecursionCount;
-   XHANDLE OwningThread;
-};
+XBXKRNL void
+RtlEnterCriticalSection(ptr32<KCriticalSection> lpCriticalSection);
 
-using XLPCRITICAL_SECTION = XLP<XCRITICAL_SECTION>;
-
-#pragma pack(pop)
-
-XBXKRNL XVOID
-RtlInitializeCriticalSection(XLPCRITICAL_SECTION lpCriticalSection);
-
-XBXKRNL XVOID
-RtlInitializeCriticalSectionAndSpinCount(XLPCRITICAL_SECTION lpCriticalSection,
-                                         XDWORD dwSpinCount);
-
-XBXKRNL XBOOL
-RtlTryEnterCriticalSection(XLPCRITICAL_SECTION lpCriticalSection);
-
-XBXKRNL XVOID
-RtlEnterCriticalSection(XLPCRITICAL_SECTION lpCriticalSection);
-
-XBXKRNL XVOID
-RtlLeaveCriticalSection(XLPCRITICAL_SECTION lpCriticalSection);
+XBXKRNL void
+RtlLeaveCriticalSection(ptr32<KCriticalSection> lpCriticalSection);
 
 #endif // ifndef XBXKRNL_RTL_H

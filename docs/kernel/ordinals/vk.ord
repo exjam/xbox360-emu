@@ -1,0 +1,5 @@
+0 : vk.dll
+1 : _RegisterXuiClasses_CVKApp__EAAJXZ
+2 : _VK_UnInit__YAXXZ
+3 : _VK_CreateScene__YAJPAU_XVIRTUALKBDUI_PARAMS__PAPAU_XUIOBJ___Z
+4 : _VK_GetUserCancelled__YAHPAU_XUIOBJ___Z

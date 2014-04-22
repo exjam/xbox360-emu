@@ -14,6 +14,9 @@
 #define IMAGE_SIZEOF_NT_OPTIONAL_HEADER   224
 #define IMAGE_FILE_MACHINE_POWERPCBE      0x01F2
 
+// https://github.com/nateleroux/xbdm/blob/master/xbdm/imp/xex.h
+// https://github.com/nateleroux/xbdm/blob/master/xbdm/imp/xexhv.h
+
 namespace xex
 {
    

@@ -8,6 +8,7 @@
 #include "common/memory.h"
 
 #include <fstream>
+#include <Windows.h>
 
 System::System()
 {
@@ -55,30 +56,37 @@ void System::resumeThread(Thread *thread)
    }
 
    if (!thread->state) {
-      ppc::Interpreter::State *state = new ppc::Interpreter::State();
-      thread->state = state;
-      
-      auto thrState = new XThreadState();
-      thread->xthread.state = thrState;
-      thread->xthread.state->threadId = GetCurrentThreadId();
+      auto state = new ppc::Interpreter::State();
+      auto kthread = new KThread();
+      auto kprocess = new KProcess();
+      auto pcr = new KPcr();
 
-
-      auto thrTLS = new XThreadLocalStorage();
-      thread->xthread.state->tls = thrTLS;
-      thread->xthread.state->tls->tlsSize = 0x400;
-
-      memset(thread->xthread.state->tls->tlsVarBitset, 0xff, 8 * sizeof(XDWORD));
-
-      thread->xthread.tlsVars = new XBYTE[thread->xthread.state->tls->tlsSize];
-      thread->xthread.tlsVars.value += thread->xthread.state->tls->tlsSize;
-      
+      memset(pcr, 0, sizeof(KPcr));
+      memset(kthread, 0, sizeof(KThread));
+      memset(kprocess, 0, sizeof(KProcess));
       memset(state, 0, sizeof(ppc::Interpreter::State));
+      
+      thread->state = state;
+      thread->pcr = pcr;
+      pcr->PrcbData.CurrentThread = kthread;
+      kthread->ApcState.Process = kprocess;
 
+      kthread->ThreadId = GetCurrentThreadId();
+
+      // Set up TLS
+      kprocess->SizeOfTlsSlots = mBinary.header.tlsInfo.dataSize * mBinary.header.tlsInfo.slotCount;
+      memset(kprocess->TlsSlotBitmap, 0xff, 8 * 4);
+      
+      // TlsData works like stack, subtracts from ptr!
+      pcr->TlsData = (new uint8_t[kprocess->SizeOfTlsSlots]) + kprocess->SizeOfTlsSlots;
+      
       state->cia = thread->startAddress;
       state->nia = state->cia + 4;
+
+      // Initial register values
       state->reg.gpr[1] = reinterpret_cast<uint64_t>(thread->stack) + thread->stackSize;
       state->reg.gpr[3] = thread->startParameter;
-      state->reg.gpr[13] = reinterpret_cast<uint64_t>(&thread->xthread);
+      state->reg.gpr[13] = reinterpret_cast<uint64_t>(thread->pcr);
    }
 
    state = reinterpret_cast<ppc::Interpreter::State *>(thread->state);

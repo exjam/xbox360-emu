@@ -92,7 +92,7 @@ bool lbzx(State *state, Instruction instr)
    return lxx<uint8_t, LoadZeroExtend | LoadIndexed>(state, instr);
 }
 
-/* Load Double */
+/* Load Doubleword */
 bool ld(State *state, Instruction instr)
 {
    return lxx<uint64_t, LoadDS>(state, instr);

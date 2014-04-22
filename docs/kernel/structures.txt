@@ -1,0 +1,240 @@
+LIST_ENTRY : 0x8
+	0x00 : LIST_ENTRY *flink
+	0x04 : LIST_ENTRY *blink
+
+DISPATCHER_HEADER : 0x10
+	0x00 : UCHAR Type
+	0x01 : UCHAR Absolute
+	0x02 : UCHAR Absolute
+	0x03 : UCHAR Absolute
+	0x04 : LONG SignalState
+	0x08 : LIST_ENTRY WaitListHead
+
+KMUTANT : 0x1c
+	0x00 : DISPATCHER_HEADER Header
+	0x10 : LIST_ENTRY MutantListEntry
+	0x18 : KTHREAD *OwnerThread
+	0x1C : BOOLEAN Abandoned
+	
+KDPC : 0x1c
+	0x00 : short Type
+	0x02 : BYTE InsertedNumber
+	0x03 : BYTE TargetNumber
+	0x04 : LIST_ENTRY DpcListEntry
+	0x0C : void *DeferredRoutine
+	0x10 : void *DeferredCintext
+	0x14 : void *SystemArgument1
+	0x18 : void *SystemArgument2
+	
+KTIMER : 0x28
+	0x00 : DISPATCHER_HEADER Header
+	0x10 : ULARGE_INTEGER DueTime
+	0x18 : LIST_ENTRY TimerListEntry
+	0x20 : KDPC *Dpc
+	0x24 : LONG Period
+
+KWAIT_BLOCK : 0x18
+	0x00 : LIST_ENTRY WaitListEntry
+	0x08 : KTHREAD *Thread
+	0x0C : PVOID Object
+	0x10 : KWAIT_BLOCK *NextWaitBlock
+	0x14 : USHORT WaitKey
+	0x16 : USHORT WaitType
+
+KSEMAPHORE : 0x14
+	0x00 : DISPATCHER_HEADER Header
+	0x10 : LONG Limit
+
+KAPC_STATE : 0x17
+	0x00 : LIST_ENTRY ApcListHead[2]
+	0x10 : KPROCESS *Process
+	0x14 : BOOLEAN KernelApcInProgress
+	0x15 : BOOLEAN KernelApcPending
+	0x16 : BOOLEAN UserApcPending
+	
+KAPC : 0x28
+    0x00 : CSHORT Type;
+    0x02 : KPROCESSOR_MODE ApcMode
+	0x03 : UCHAR ???
+    0x04 : KTHREAD *Thread
+	0x08 : LIST_ENTRY ApcListEntry
+    0x10 : PKKERNEL_ROUTINE KernelRoutine
+    0x14 : PKRUNDOWN_ROUTINE RundownRoutine
+    0x18 : PKNORMAL_ROUTINE NormalRoutine
+    0x1C : PVOID NormalContext
+    0x20 : PVOID SystemArgument1
+    0x24 : PVOID SystemArgument2
+
+KSEMAPHORE : 0x14
+    0x00 : DISPATCHER_HEADER Header
+    0x10 : LONG Limit
+
+KSPIN_LOCK : 0x4
+	0x00 : ULONG_PTR
+
+KTHREAD : ?
+	0x00 : DISPATCHER_HEADER Header
+	0x10 : LIST_ENTRY MutantListHead
+	0x18 : KTIMER Timer
+	0x40 : KWAIT_BLOCK TimerWaitBlock
+	0x58 : DWORD KernelTime
+	0x5C : PVOID InitialStack
+    0x60 : PVOID StackLimit
+    0x64 : PVOID KernelStack
+	0x68 : PVOID TlsData
+	0x6C : UCHAR State
+    0x6D : BOOLEAN Alerted[2]
+	0x6F : BOOLEAN Alertable
+    0x70 : SCHAR Priority
+	0x71 : UCHAR FpuExceptionEnable
+	0x72 : UCHAR CreateProcessType
+	0x73 : UCHAR CurrentProcessType
+	0x74 : KAPC_STATE ApcState
+    0x8B : BOOLEAN ApcQueueable
+	0x8C : KSPIN_LOCK ApcQueueLock
+	0x90 : ULONG ContextSwitches
+	0x94 : LIST_ENTRY ReadyListEntry
+    0x9C : ULONG MsrEnableMask
+	0xA0 : LONG_PTR WaitStatus
+    0xA4 : KIRQL WaitIrql
+	0xA5 : KPROCESSOR_MODE WaitMode
+	0xA6 : BOOLEAN WaitNext
+	0xA7 : UCHAR WaitReason
+	0xA8 : KWaitBlock * WaitBlockList
+	0xAC : ?
+	0xB0 : DWORD KernelApcDisable
+	0xB4 : DWORD Quantum
+	0xB8 : CHAR Saturation
+	0xB9 : SCHAR BasePriority
+	0xBA : SCHAR PriorityDecrement
+	0xBB : UCHAR DisableBoost
+	0xBC : CCHAR SuspendCount
+	0xBD : BOOLEAN Preempted
+	0xBE : UCHAR HasTerminated
+	0xBF : UCHAR CurrentProcessor
+	0xC0 : KPRCB *CurrentPrcb
+	0xC4 : KPRCB *AffinityPrcb
+	0xC8 : UCHAR IdlePriorityClass
+	0xC9 : UCHAR NormalPriorityClass
+	0xCA : UCHAR TimeCriticalPriorityClass
+	0xCB : UCHAR HasAsyncTerminated
+	0xCC : DWORD ActiveTimerListLock
+	0xD0 : PVOID StackAllocatedBase
+	0xD4 : KACP SuspendApc
+	0xFC : KSEMAPHORE SuspendSemaphore
+	0x110 : LIST_ENTRY ThreadListEntry
+	0x118 : PRKQUEUE Queue
+	0x11C : LIST_ENTRY QueueListEntry
+	0x124 : PVOID UserModeDispatcher
+	0x128 : PKTRAPFRAME UserModeTrapFrame
+	0x12c : ?
+	0x130 : int64_t CreateTime
+	0x138 : int64_t ExitTime
+	0x140 : int32_t ExitStatus
+	0x144 : LIST_ENTRY ActiveTimerListHead
+	0x14C : DWORD ThreadId
+	0x150 : PVOID StartAddress
+	0x154 : LIST_ENTRY IrpList
+	0x15C : PDEBUG_MONITOR_PTRS DebugMonitorData
+	0x160 : DWORD LastWin32ErrorCode
+	0x164 : PVOID Win32CurrentFiber
+	0x168 : ?
+	0x16C : DWORD CreateOptions
+	... ?
+
+KPROCESS : ?
+	0x00 : DWORD ThreadListLock
+	0x04 : LIST_ENTRY ThreadListHead
+	0x0C : long ThreadQuantum
+	0x10 : DWORD DirectoryTableBase
+	0x14 : DWORD ThreadCount
+	0x18 : BYTE IdlePriorityClass
+	0x19 : BYTE NormalPriorityClass
+	0x1a : BYTE TimeCriticalPriorityClass
+	0x1b : BYTE DisableQuantum
+	0x1c : DWORD DefaultKernelStackSize
+	0x20 : void * TlsStaticDataImage
+	0x24 : DWORD SizeOfTlsStaticData
+	0x28 : DWORD SizeOfTlsStaticDataImage
+	0x2c : USHORT SizeOfTlsSlots
+	0x2e : BYTE Terminating
+	0x2f : BYTE ProcessType
+	0x30 : DWORD TlsSlotBitmap[8]
+	0x50 : DWORD FileObjectListLock
+	0x54 : LIST_ENTRY FileObjectListHead
+	0x5C : void * Win32DefaultHeapHandle
+	... ?
+
+KPCRB : 0x1a8
+	0x00 : PKTHREAD CurrentThread
+	0x04 : PKTHREAD NextThread
+	0x08 : PKTHREAD IdleThread
+	0x0C : BYTE Number
+	0x10 : DWORD SetMember
+	0x14 : DWORD DpcTime
+	0x18 : DWORD InterruptTime
+	0x1C : DWORD InterruptCount
+	0x20 : DWORD IpiFrozen
+	0x24 : PVOID CurrentPacket[3]
+	0x30 : DWORD TargetSet
+	0x34 : PVOID WorkerRoutine
+	0x38 : KPRCB *SignalDone
+	0x3C : DWORD RequestSummary
+	0x40 : DWORD DpcInterruptRequested
+	0x44 : DWORD DpcLock
+	0x48 : LIST_ENTRY DpcListHead
+	0x50 : DWORD DpcRoutineActive
+	0x54 : DWORD ReadyListLock
+	0x58 : DWORD IdleThreadActive
+	0x5C : PVOID DeferredReadyListHead
+	0x60 : DWORD ReadySummary
+	0x64 : DWORD ReadSummaryMask
+	0x68 : LIST_ENTRY DispatcherReadyListHead[32]
+	0x168 : KDPC ThreadReaperDpc
+	0x184 : LIST_ENTRY ThreadReaperListHead
+	0x18c : KDPC SwitchProcessorThreadDpc
+	
+KPCR : ?
+	0x00 : PVOID TlsData
+	0x04 : DWORD MsrEnableMask
+	0x08 : USHORT SoftwareInterrupt
+	0x0a : USHORT DpcFpuVpuStateSaved
+	0x0c : BYTE DpcCurrentProcessType
+	0x0d : BYTE QuantumEnd
+	0x0e : BYTE TimerRequest
+	0x0f : BYTE HvCr0Save
+	0x10 : PKTHREAD FpuOwnerThread
+	0x14 : PKTHREAD VpuOwnerThread
+	0x18 : BYTE CurrentIrql
+	0x19 : BYTE BackgroundSchedulingActive
+	0x1a : USHORT StartStopBackgroundScheduling
+	0x1c : DWORD TimerHand
+	0x20 : ULONGLONG LrIarSave
+	0x28 : ULONGLONG CrMsrSave
+	0x30 : ULONGLONG Gpr13Save
+	0x38 : ULONGLONG HvGpr1Save
+	0x40 : ULONGLONG HvGpr3Save
+	0x48 : ULONGLONG HvGpr4Save
+	0x50 : ULONGLONG HvGpr5Save
+	0x58 : DWORD UserModeControl
+	0x5c : void * PanicStack
+	0x60 : DWORD DarSave
+	0x64 : DWORD DsisrSave
+	0x68 : void * DbgLastDpcRoutine
+	0x6c : DWORD OnInterruptStack
+	0x70 : void * StackBase
+	0x74 : void * StackLimit
+	0x78 : void * InterruptStackBase
+	0x7c : void * InterruptStackLimit
+	0x80 : void * InterruptRoutine[32]
+	0x100 : KPCRB PrcbData
+	0x2a8 : KPCRB *Prcb
+	0x2ac : DWORD ?
+	0x2b0 : DWORD *PixCurrent
+	0x2b4 : DWORD *PixLimit
+	0x2b8 : DWORD *ProfilerCurrent
+	0x2bc : DWORD *ProfilerLimit
+	0x2c0 : DWORD ProfilerFlags
+	0x2c4 : DWORD ?
+	0x2c8 : ULONGLONG Contention
+	0x2d0 : DWORD * MonitorProfileData

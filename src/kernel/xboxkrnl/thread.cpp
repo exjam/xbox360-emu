@@ -2,6 +2,8 @@
 #include "xboxkrnl.h"
 #include "common/memory.h"
 
+#include <Windows.h>
+
 DWORD __stdcall ExCreateThreadStub(LPVOID lpThreadParameter)
 {
    Thread *thread = reinterpret_cast<Thread *>(lpThreadParameter);
@@ -9,14 +11,14 @@ DWORD __stdcall ExCreateThreadStub(LPVOID lpThreadParameter)
    return 0;
 }
 
-XBXKRNL XDWORD
-ExCreateThread(XLPHANDLE pHandle,
-               XDWORD dwStackSize,
-               XLPDWORD lpThreadId,
-               XLPVOID apiThreadStartup,
-               XLPVOID lpStartAddress,
-               XLPVOID lpParameter,
-               XDWORD dwCreationFlagsMod)
+XBXKRNL uint32_t
+ExCreateThread(ptr32<uint32_t> pHandle,
+               uint32_t dwStackSize,
+               ptr32<uint32_t> lpThreadId,
+               ptr32<void*> apiThreadStartup,
+               ptr32<void*> lpStartAddress,
+               ptr32<void*> lpParameter,
+               uint32_t dwCreationFlagsMod)
 {
    Thread *thread = new Thread();
 
@@ -27,21 +29,21 @@ ExCreateThread(XLPHANDLE pHandle,
    thread->startParameter   = lpParameter;
    thread->creationFlags    = dwCreationFlagsMod;
 
-   thread->handle = CreateThread(NULL,
-                                 0,
-                                 &ExCreateThreadStub,
-                                 reinterpret_cast<LPVOID>(thread),
-                                 0,
-                                 NULL);
+   auto handle = CreateThread(NULL,
+                              0,
+                              &ExCreateThreadStub,
+                              reinterpret_cast<LPVOID>(thread),
+                              0,
+                              NULL);
 
-   if (thread) {
-      if (pHandle) {
-         Memory::write(pHandle, thread->handle);
-      }
+   thread->handle = reinterpret_cast<uint32_t>(handle);
 
-      if (lpThreadId) {
-         Memory::write(lpThreadId, thread->id);
-      }
+   if (pHandle) {
+      Memory::write(pHandle, thread->handle);
+   }
+
+   if (lpThreadId) {
+      Memory::write(lpThreadId, thread->id);
    }
 
    return 0;

@@ -5,18 +5,22 @@
 #include <Windows.h>
 
 XBXKRNL XNTSTATUS
-NtAllocateVirtualMemory(XLPDWORD lpBaseAddress,
-                        XLPDWORD lpRegionSize,
-                        XDWORD dwAllocationType,
-                        XDWORD dwProtect,
-                        XDWORD dwFlags)
+NtAllocateVirtualMemory(ptr32<uint32_t> lpBaseAddress,
+                        ptr32<uint32_t> lpRegionSize,
+                        uint32_t dwAllocationType,
+                        uint32_t dwProtect,
+                        uint32_t dwFlags)
 {
-   XDWORD RegionSize = 0;
-   XDWORD BaseAddress = 0;
-   XDWORD result;
+   uint32_t RegionSize = 0;
+   uint32_t BaseAddress = 0;
 
-   swapField(lpRegionSize, &RegionSize);
-   swapField(lpBaseAddress, &BaseAddress);
+   if (lpBaseAddress) {
+      BaseAddress = bits::swap(*lpBaseAddress);
+   }
+
+   if (lpRegionSize) {
+      RegionSize = bits::swap(*lpRegionSize);
+   }
    
    xDebug()
       << "NtAllocateVirtualMemory("
@@ -26,13 +30,14 @@ NtAllocateVirtualMemory(XLPDWORD lpBaseAddress,
       << Log::hex(dwProtect) << ", "
       << Log::hex(dwFlags) << ")";
 
-   result = reinterpret_cast<XDWORD>(
-               VirtualAlloc(reinterpret_cast<LPVOID>(BaseAddress),
-                           RegionSize,
-                           dwAllocationType & 0xFFFF,
-                           dwProtect));
+   BaseAddress = reinterpret_cast<uint32_t>(VirtualAlloc(reinterpret_cast<LPVOID>(BaseAddress),
+                                                         RegionSize,
+                                                         dwAllocationType & 0xFFFF,
+                                                         dwProtect));
 
-   swapField(&result, lpBaseAddress);
+   if (lpBaseAddress) {
+      *lpBaseAddress = bits::swap(BaseAddress);
+   }
 
-   return (result != 0) ? XSTATUS_SUCCESS : XSTATUS_NO_MEMORY;
+   return (BaseAddress != 0) ? XSTATUS_SUCCESS : XSTATUS_NO_MEMORY;
 }

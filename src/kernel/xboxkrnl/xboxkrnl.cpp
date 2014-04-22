@@ -4,7 +4,7 @@
 
 IKernel *g_kernel;
 
-XBXKRNL XVOID
+XBXKRNL void
 EmuInitKernel(IKernel *kernel)
 {
    g_kernel = kernel;
