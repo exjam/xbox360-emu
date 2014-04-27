@@ -1,7 +1,7 @@
 #ifndef PPC_FPU_H
 #define PPC_FPU_H
 
-#include "../../common/bits.h"
+#include <stdint.h>
 
 namespace ppc
 {

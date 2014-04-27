@@ -4,7 +4,12 @@
 #include "xex/xex.h"
 #include "kernel/kernel.h"
 
-class System : protected IKernel
+#include <map>
+
+class Thread;
+class Module;
+
+class System
 {
 public:
    System();
@@ -13,21 +18,23 @@ public:
 
    bool start();
 
+   bool analyse(uint64_t start);
+   void resumeThread(Thread *thread);
+
+   void addModule(Module *module);
+   Module *getModule(std::string name);
+
+   xex::Binary *getBinary();
+
 private:
    bool initKernel();
    bool resolveImports(xex::ImportLibraries &imports);
-   bool loadLibrary(xex::ImportLibrary &library);
-   bool loadImport(xex::ImportLibrary &library, xex::ImportLibrary::Import &import);
-
-   bool analyse(uint64_t start);
-
-protected: /* IKernel */
-   void resumeThread(Thread *thread);
-   xex::Binary *getXexBinary();
 
 private:
    xex::Binary mBinary;
-   std::vector<Thread*> mThreads;
+   std::map<std::string, Module*> mModules;
 };
+
+extern System gSystem;
 
 #endif // System

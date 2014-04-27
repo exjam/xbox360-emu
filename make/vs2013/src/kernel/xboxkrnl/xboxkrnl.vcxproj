@@ -17,7 +17,7 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v120</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
@@ -84,26 +84,33 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\..\..\src\kernel\xboxkrnl\ke.cpp" />
-    <ClCompile Include="..\..\..\..\..\src\kernel\xboxkrnl\nt.cpp" />
-    <ClCompile Include="..\..\..\..\..\src\kernel\xboxkrnl\rtl.cpp" />
+    <ClCompile Include="..\..\..\..\..\src\kernel\xboxkrnl\debug.cpp" />
+    <ClCompile Include="..\..\..\..\..\src\kernel\xboxkrnl\version.cpp" />
+    <ClCompile Include="..\..\..\..\..\src\kernel\xboxkrnl\wait.cpp" />
+    <ClCompile Include="..\..\..\..\..\src\kernel\xboxkrnl\virtualmemory.cpp" />
+    <ClCompile Include="..\..\..\..\..\src\kernel\xboxkrnl\criticalsection.cpp" />
+    <ClCompile Include="..\..\..\..\..\src\kernel\xboxkrnl\process.cpp" />
+    <ClCompile Include="..\..\..\..\..\src\kernel\xboxkrnl\spinlock.cpp" />
     <ClCompile Include="..\..\..\..\..\src\kernel\xboxkrnl\thread.cpp" />
-    <ClCompile Include="..\..\..\..\..\src\kernel\xboxkrnl\xbox.cpp" />
+    <ClCompile Include="..\..\..\..\..\src\kernel\xboxkrnl\tls.cpp" />
+    <ClCompile Include="..\..\..\..\..\src\kernel\xboxkrnl\hardware.cpp" />
     <ClCompile Include="..\..\..\..\..\src\kernel\xboxkrnl\xboxkrnl.cpp" />
     <ClCompile Include="..\..\..\..\..\src\kernel\xboxkrnl\xex.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\..\..\src\kernel\xboxkrnl\ke.h" />
-    <ClInclude Include="..\..\..\..\..\src\kernel\xboxkrnl\nt.h" />
-    <ClInclude Include="..\..\..\..\..\src\kernel\xboxkrnl\rtl.h" />
+    <ClInclude Include="..\..\..\..\..\src\kernel\xboxkrnl\debug.h" />
+    <ClInclude Include="..\..\..\..\..\src\kernel\xboxkrnl\ntstructs.h" />
+    <ClInclude Include="..\..\..\..\..\src\kernel\xboxkrnl\version.h" />
+    <ClInclude Include="..\..\..\..\..\src\kernel\xboxkrnl\wait.h" />
+    <ClInclude Include="..\..\..\..\..\src\kernel\xboxkrnl\virtualmemory.h" />
+    <ClInclude Include="..\..\..\..\..\src\kernel\xboxkrnl\criticalsection.h" />
+    <ClInclude Include="..\..\..\..\..\src\kernel\xboxkrnl\process.h" />
+    <ClInclude Include="..\..\..\..\..\src\kernel\xboxkrnl\spinlock.h" />
     <ClInclude Include="..\..\..\..\..\src\kernel\xboxkrnl\thread.h" />
-    <ClInclude Include="..\..\..\..\..\src\kernel\xboxkrnl\xbox.h" />
+    <ClInclude Include="..\..\..\..\..\src\kernel\xboxkrnl\tls.h" />
+    <ClInclude Include="..\..\..\..\..\src\kernel\xboxkrnl\hardware.h" />
     <ClInclude Include="..\..\..\..\..\src\kernel\xboxkrnl\xboxkrnl.h" />
     <ClInclude Include="..\..\..\..\..\src\kernel\xboxkrnl\xex.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\..\..\..\..\src\kernel\xboxkrnl\xboxkrnl.def" />
-    <None Include="..\..\..\..\..\src\kernel\xboxkrnl\xboxkrnl.krn" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

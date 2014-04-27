@@ -2,8 +2,6 @@
 #include "fpu.h"
 #include "regs.h"
 
-#include "common/bits.h"
-
 #include <limits>
 #include <float.h>
 #include <cmath>
@@ -708,7 +706,7 @@ bool fsubs(State *state, Instruction instr)
 /* Move to Condition Register from FPSCR */
 bool mcrfs(State *state, Instruction instr)
 {
-   crf(instr.crfD) = fpscr(instr.crfS);
+   fpscr(instr.crfD) = fpscr(instr.crfS);
 
    switch (instr.crfS) {
    case 0:
@@ -755,7 +753,7 @@ bool mffs(State *state, Instruction instr)
 /* Move to FPSCR Bit 0 */
 bool mtfsb0(State *state, Instruction instr)
 {
-   state->reg.fpscr.value = bits::clear(state->reg.fpscr.value, instr.crbD);
+   state->reg.fpscr.value = little_endian::clear_bit(state->reg.fpscr.value, instr.crbD);
 
    if (instr.rc) {
       updateCr1(state);
@@ -767,7 +765,7 @@ bool mtfsb0(State *state, Instruction instr)
 /* Move to FPSCR Bit 1 */
 bool mtfsb1(State *state, Instruction instr)
 {
-   state->reg.fpscr.value = bits::set(state->reg.fpscr.value, instr.crbD);
+   state->reg.fpscr.value = little_endian::set_bit(state->reg.fpscr.value, instr.crbD);
 
    if (instr.rc) {
       updateCr1(state);
@@ -810,7 +808,6 @@ bool mtfsf(State *state, Instruction instr)
 /* Move to FPSCR Field Immediate */
 bool mtfsfi(State *state, Instruction instr)
 {
-
    if (instr.crfD == 0) {
       fpscr(instr.crfD) = instr.uimm & 0x9;
    } else {

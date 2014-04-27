@@ -45,6 +45,12 @@ enum class Headers
 
 #pragma pack(push, 1)
 
+struct OptionalRawHeader
+{
+   uint32_t key;
+   std::vector<uint8_t> data;
+};
+
 struct OptionalHeader {
    OptionalHeader() : _read(false) {}
    bool _read;
@@ -165,9 +171,6 @@ struct ImageBaseAddress : public OptionalHeader
    uint32_t address;
 };
 
-using ImportHandle = void*;
-using LibraryHandle = void*;
-
 struct ImportLibrary : public OptionalHeader
 {
    struct Record {
@@ -180,10 +183,8 @@ struct ImportLibrary : public OptionalHeader
       uint32_t thunk;
       uint32_t args;
       std::string name;
-      ImportHandle handle;
    };
 
-   LibraryHandle handle;
    uint32_t unknown;
    uint8_t digest[20];
    uint32_t importId;

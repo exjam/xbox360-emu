@@ -4,7 +4,6 @@
 #include "powerpc/instructions.h"
 
 #include "common/log.h"
-#include "common/bits.h"
 #include "common/memory.h"
 
 #include <limits>
@@ -36,9 +35,9 @@ bool lxx(State *state, Instruction instr)
    if (Flags & LoadIndexed) {
       ea = gpr(instr.rB);
    } else if (Flags & LoadDS) {
-      ea = bits::signExtend<16>(static_cast<uint64_t>(instr.ds) << 2);
+      ea = little_endian::signExtend<16>(static_cast<uint64_t>(instr.ds) << 2);
    } else {
-      ea = bits::signExtend<16, uint64_t>(instr.d);
+      ea = little_endian::signExtend<16, uint64_t>(instr.d);
    }
 
    if (Flags & LoadUpdate) {
@@ -52,14 +51,14 @@ bool lxx(State *state, Instruction instr)
    value = Memory::read<SrcType>(ea);
 
    if (Flags & LoadReversed) {
-      value = bits::swap(value);
+      value = byte_swap(value);
    }
 
    if (Flags & LoadFpu) {
       fpr(instr.frD) = static_cast<ppc::freg_t>(value);
    } else {
       if (Flags & LoadSignExtend) {
-         gpr(instr.rD) = bits::signExtend<sizeof(SrcType)* 8, ppc::reg_t>(value);
+         gpr(instr.rD) = little_endian::signExtend<sizeof(SrcType)* 8, ppc::reg_t>(value);
       } else {
          gpr(instr.rD) = value;
       }
@@ -235,7 +234,7 @@ bool lhzx(State *state, Instruction instr)
 /* Load Multiple Word */
 bool lmw(State *state, Instruction instr)
 {
-   auto ea = gpr0(instr.rA) + bits::signExtend<16, uint64_t>(instr.d);
+   auto ea = gpr0(instr.rA) + little_endian::signExtend<16, uint64_t>(instr.d);
 
    if (ea & 0x3) {
       raise(state, ppc::Exceptions::Alignment);

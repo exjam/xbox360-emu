@@ -1,11 +1,17 @@
-#ifndef XBOX_KERNEL_H
-#define XBOX_KERNEL_H
+#ifndef XBOXKRNL_H
+#define XBOXKRNL_H
 
-#include "kernel/kernel.h"
+#include <stdint.h>
+#include "common/structmacros.h"
+#include "kernel/module.h"
 
-XBXKRNL void
-EmuInitKernel(IKernel *kernel);
+class xboxkrnl : public Module
+{
+public:
+   xboxkrnl();
 
-extern IKernel *g_kernel;
+private:
+   void addExports();
+};
 
-#endif
+#endif // XBOXKRNL_H

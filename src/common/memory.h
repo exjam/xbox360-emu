@@ -3,9 +3,12 @@
 
 #include <stdint.h>
 #include <string.h>
-#include "bits.h"
 
-class Memory {
+#include "byte_swap.h"
+#include "ptr32.h"
+
+class Memory
+{
 public:
    static uint8_t* allocate(uint64_t address, unsigned size);
    static void free(uint64_t address, unsigned size);
@@ -29,7 +32,13 @@ public:
    template<typename T>
    static inline T read(uint64_t address)
    {
-      return bits::swap(*reinterpret_cast<T*>(translate(address)));
+      return byte_swap(*reinterpret_cast<T*>(translate(address)));
+   }
+
+   template<typename Type, typename StorageType>
+   static inline Type read(ptr32_t<Type, StorageType> ptr)
+   {
+      return byte_swap(*ptr);
    }
 
    template<typename PointedType>
@@ -41,7 +50,13 @@ public:
    template<typename T>
    static inline void write(uint64_t address, const T &value)
    {
-      *reinterpret_cast<T*>(translate(address)) = bits::swap<T>(value);
+      *reinterpret_cast<T*>(translate(address)) = byte_swap(value);
+   }
+
+   template<typename Type , typename StorageType>
+   static inline void write(ptr32_t<Type, StorageType> ptr, const Type &value)
+   {
+      *ptr = byte_swap(value);
    }
 
    template<typename PointedType>

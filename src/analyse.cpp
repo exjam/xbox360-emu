@@ -1,7 +1,7 @@
 #include "system.h"
 
 #include "common/memory.h"
-#include "common/bits.h"
+#include "common/endian.h"
 #include "common/log.h"
 
 #include "powerpc/cpu.h"
@@ -51,17 +51,17 @@ uint64_t getBranchAddress(uint64_t cia, ppc::Instruction instr)
 {
    if (ppc::isa<ppc::InstructionID::b>(instr)) {
       if (instr.aa) {
-         return bits::signExtend<26>(static_cast<uint64_t>(instr.li) << 2);
+         return le_bit_accessor::signExtend<26>(static_cast<uint64_t>(instr.li) << 2);
       } else {
-         return cia + bits::signExtend<26>(static_cast<uint64_t>(instr.li) << 2);
+         return cia + le_bit_accessor::signExtend<26>(static_cast<uint64_t>(instr.li) << 2);
       }
    }
 
    if (ppc::isa<ppc::InstructionID::bc>(instr)) {
       if (instr.aa) {
-         return bits::signExtend<16>(static_cast<uint64_t>(instr.bd) << 2);
+         return le_bit_accessor::signExtend<16>(static_cast<uint64_t>(instr.bd) << 2);
       } else {
-         return cia + bits::signExtend<16>(static_cast<uint64_t>(instr.bd) << 2);
+         return cia + le_bit_accessor::signExtend<16>(static_cast<uint64_t>(instr.bd) << 2);
       }
    }
 

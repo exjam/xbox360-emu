@@ -5,7 +5,7 @@
 #include <assert.h>
 #include <stdint.h>
 
-#include "common/bits.h"
+#include "common/byte_swap.h"
 
 struct NullPadString
 {
@@ -36,7 +36,7 @@ public:
    BigInputStream & operator>>(Type& val)
    {
       mStream.read(reinterpret_cast<char*>(&val), sizeof(Type));
-      val = bits::swap(val);
+      val = byte_swap(val);
       return *this;
    }
 

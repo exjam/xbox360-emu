@@ -5,7 +5,7 @@
 #include <fstream>
 #include <string>
 
-#include "common/bits.h"
+#include "common/byte_swap.h"
 
 namespace elf
 {
@@ -57,14 +57,14 @@ bool load(const std::string &path, uint64_t *sizeOut, uint8_t **codeOut)
 
    /* Read Big Endian Header */
    in.read(reinterpret_cast<char*>(&hdr), sizeof(Elf64_Ehdr));
-   hdr.e_shoff = bits::swap(hdr.e_shoff);
+   hdr.e_shoff = byte_swap(hdr.e_shoff);
 
    /* Read code section[1] */
    in.seekg(hdr.e_shoff + sizeof(Elf64_Shdr), in.beg);
    in.read(reinterpret_cast<char*>(&txt), sizeof(Elf64_Shdr));
 
-   txt.sh_size = bits::swap(txt.sh_size);
-   txt.sh_offset = bits::swap(txt.sh_offset);
+   txt.sh_size = byte_swap(txt.sh_size);
+   txt.sh_offset = byte_swap(txt.sh_offset);
 
    /* Read Code*/
    code = new uint8_t[txt.sh_size];

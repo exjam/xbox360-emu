@@ -19,11 +19,21 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\..\src\common\bits.h" />
+    <ClInclude Include="..\..\..\..\src\common\bigendian.h" />
+    <ClInclude Include="..\..\..\..\src\common\bit_array.h" />
+    <ClInclude Include="..\..\..\..\src\common\bit_cast.h" />
+    <ClInclude Include="..\..\..\..\src\common\bit_field.h" />
+    <ClInclude Include="..\..\..\..\src\common\bit_mask.h" />
+    <ClInclude Include="..\..\..\..\src\common\bit_scan.h" />
+    <ClInclude Include="..\..\..\..\src\common\bit_swap.h" />
+    <ClInclude Include="..\..\..\..\src\common\byte_swap.h" />
     <ClInclude Include="..\..\..\..\src\common\emugen_types.h" />
+    <ClInclude Include="..\..\..\..\src\common\endian.h" />
     <ClInclude Include="..\..\..\..\src\common\flags.h" />
     <ClInclude Include="..\..\..\..\src\common\log.h" />
     <ClInclude Include="..\..\..\..\src\common\memory.h" />
+    <ClInclude Include="..\..\..\..\src\common\ptr32.h" />
+    <ClInclude Include="..\..\..\..\src\common\structmacros.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\src\common\log.cpp" />

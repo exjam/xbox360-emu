@@ -1,7 +1,7 @@
 #include "interpreter.h"
 #include "regs.h"
 
-#include "common/bits.h"
+#include "common/bit_cast.h"
 
 namespace ppc 
 {
@@ -16,7 +16,7 @@ static inline void updateCr0(State *state, Type value)
 
    if (value == 0) {
       flags |= ppc::Cr::Zero;
-   } else if (bits::get(value, bits::count<Type>() - 1)) {
+   } else if (little_endian::get_bit(value, little_endian::width<Type>() - 1)) {
       flags |= ppc::Cr::Negative;
    } else {
       flags |= ppc::Cr::Positive;
@@ -60,7 +60,7 @@ bool addx(State *state, Instruction instr)
    }
 
    if (Flags & AddImmediate) {
-      b = bits::signExtend<16, uint64_t>(instr.simm);
+      b = little_endian::signExtend<16, uint64_t>(instr.simm);
    } else if (Flags & AddToZero) {
       b = 0;
    } else if (Flags & AddToMinusOne) {
@@ -83,7 +83,7 @@ bool addx(State *state, Instruction instr)
 
    if ((Flags & AddImmediate) == 0) {
       if (instr.oe) {
-         updateXerOverflow(state, bits::get((a ^ d) & (b ^ d), 63) != 0);
+         updateXerOverflow(state, little_endian::get_bit((a ^ d) & (b ^ d), 63) != 0);
       }
    }
 
@@ -197,8 +197,8 @@ bool andiso(State *state, Instruction instr)
 /* Count Leading Zeroes Doubleword */
 bool cntlzd(State *state, Instruction instr)
 {
-   auto a = gpr(instr.rS);
-   gpr(instr.rA) = bits::beScanForward(a);
+   auto bit = little_endian::countLeadingZeros(gpr(instr.rS));
+   gpr(instr.rA) = bit < 64 ? 63 - bit : 64;
 
    if (instr.rc) {
       updateCr0(state, gpr(instr.rA));
@@ -210,8 +210,8 @@ bool cntlzd(State *state, Instruction instr)
 /* Count Leading Zeroes Word */
 bool cntlzw(State *state, Instruction instr)
 {
-   auto a = bits::zeroExtend<32>(gpr(instr.rS));
-   gpr(instr.rA) = bits::beScanForward(a);
+   auto bit = little_endian::countLeadingZeros(gprw(instr.rS));
+   gpr(instr.rA) = bit < 32 ? 31 - bit : 32;
 
    if (instr.rc) {
       updateCr0(state, gpr(instr.rA));
@@ -230,7 +230,7 @@ bool divxx(State *state, Instruction instr)
    bool overflow = b == 0;
 
    if (std::numeric_limits<Type>::is_signed) {
-      if (b == -1 && a == (static_cast<Type>(1) << (bits::count<Type>() - 1))) {
+      if (b == -1 && a == (static_cast<Type>(1) << (little_endian::width<Type>() - 1))) {
          overflow = true;
       }
    }
@@ -291,7 +291,7 @@ bool eqv(State *state, Instruction instr)
 template<int SrcBits>
 bool extsx(State *state, Instruction instr)
 {
-   gpr(instr.rA) = bits::signExtend<SrcBits>(gpr(instr.rS));
+   gpr(instr.rA) = little_endian::signExtend<SrcBits>(gpr(instr.rS));
 
    if (instr.rc) {
       updateCr0(state, gpr(instr.rA));
@@ -398,7 +398,7 @@ bool mulld(State *state, Instruction instr)
 bool mulli(State *state, Instruction instr)
 {
    auto a = gprs(instr.rA);
-   auto b = bits::signExtend<16, ppc::sreg_t>(instr.simm);
+   auto b = little_endian::signExtend<16, ppc::sreg_t>(instr.simm);
 
    gprs(instr.rD) = a * b;
 
@@ -532,12 +532,13 @@ bool rldxx(State *state, Instruction instr)
 
    r = _rotl64(gpr(instr.rS), n);
 
+   // TODO: Check this logic!!
    if (Flags & RldClearLeft) {
-      m = bits::mask<uint64_t>(63 - instr.mbd, 63 - 63);
+      m = big_endian::make_bit_mask<uint64_t>(instr.mbd, 63);
    } else if (Flags & RldClearRight) {
-      m = bits::mask<uint64_t>(63 - 0, 63 - instr.med);
+      m = big_endian::make_bit_mask<uint64_t>(0, instr.med);
    } else if (Flags & RldClear) {
-      m = bits::mask<uint64_t>(63 - instr.mbd, n);
+      m = big_endian::make_bit_mask<uint64_t>(instr.mbd, n);
    }
 
    if (Flags & RldMaskInsert) {
@@ -610,10 +611,10 @@ bool rlwxx(State *state, Instruction instr)
    
    r = _rotl(gprw(instr.rS), n);
 
-   m = bits::mask<uint32_t>(31 - instr.mb, 31 - instr.me);
+   m = big_endian::make_bit_mask<uint32_t>(instr.mb, instr.me);
 
    if (Flags & RlwMaskInsert) {
-      a = (r & m) | (r & ~m);
+      a = (r & m) | (gpr(instr.rA) & ~m);
    } else {
       a = r & m;
    }
@@ -660,9 +661,9 @@ bool sxx(State *state, Instruction instr)
 {
    Type a, n;
 
-   n = gpr(instr.rB) & (bits::count<Type>() - 1);
+   n = gpr(instr.rB) & (little_endian::width<Type>() - 1);
 
-   if (gpr(instr.rB) & bits::count<Type>()) {
+   if (gpr(instr.rB) & little_endian::width<Type>()) {
       a = 0;
    } else if (Flags & ShiftRight) {
       a = reinterpret<Type>(gpr(instr.rS)) >> n;
@@ -714,10 +715,10 @@ template<typename Type, int Flags>
 bool sraxx(State *state, Instruction instr)
 {
    uint32_t n;
-   int msb = bits::count<Type>() - 1;
+   int msb = little_endian::width<Type>() - 1;
    
    if (Flags & SraxImmediate) {
-      if (bits::count<Type>() == 64) {
+      if (little_endian::width<Type>() == 64) {
          n = instr.shd04 | (instr.shd5 << 4);
       } else {
          n = instr.sh;
@@ -732,8 +733,8 @@ bool sraxx(State *state, Instruction instr)
       updateCr0(state, gpr(instr.rA));
    }
 
-   state->reg.xer.ca = (bits::get(gpr(instr.rS), msb)
-                        && bits::get(gpr(instr.rA), msb)) ? 1 : 0;
+   state->reg.xer.ca = (little_endian::get_bit(gpr(instr.rS), msb)
+                     && little_endian::get_bit(gpr(instr.rA), msb)) ? 1 : 0;
 
    return true;
 }
@@ -781,7 +782,7 @@ bool subfx(State *state, Instruction instr)
    a = ~gpr(instr.rA);
 
    if (Flags & SubImmediate) {
-      b = bits::signExtend<16, uint64_t>(instr.simm);
+      b = little_endian::signExtend<16, uint64_t>(instr.simm);
    } else if (Flags & SubFromZero) {
       b = 0;
    } else if (Flags & SubFromMinusOne) {
@@ -802,7 +803,7 @@ bool subfx(State *state, Instruction instr)
 
    if ((Flags & SubImmediate) == 0) {
       if (instr.oe) {
-         updateXerOverflow(state, bits::get((a ^ d) & (b ^ d), 63) != 0);
+         updateXerOverflow(state, little_endian::get_bit((a ^ d) & (b ^ d), 63) != 0);
       }
 
       if (instr.rc) {

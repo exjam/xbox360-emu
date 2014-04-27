@@ -4,15 +4,12 @@
 #include "powerpc/decoder.h"
 #include "powerpc/cpu.h"
 
-#include "common/bits.h"
 #include "common/log.h"
 
 #include <sstream>
 #include <iomanip>
 #include <map>
 #include <assert.h>
-
-using bits::signExtend;
 
 std::map<unsigned, std::string> g_sprNames {
    { ppc::Registers::XER,   "XER" },
@@ -62,9 +59,9 @@ Result::Arg disField(State *state, Instruction instr, ppc::Field field)
       arg.type = Result::Address;
 
       if (instr.aa) {
-         arg.address = bits::signExtend<16>(static_cast<uint64_t>(instr.bd) << 2);
+         arg.address = little_endian::signExtend<16>(static_cast<uint64_t>(instr.bd) << 2);
       } else {
-         arg.address = state->cia + bits::signExtend<16>(static_cast<uint64_t>(instr.bd) << 2);
+         arg.address = state->cia + little_endian::signExtend<16>(static_cast<uint64_t>(instr.bd) << 2);
       }
       break;
    case Fields::crfD:
@@ -77,11 +74,11 @@ Result::Arg disField(State *state, Instruction instr, ppc::Field field)
       break;
    case Fields::d:
       arg.type = Result::ConstantSigned;
-      arg.constantSigned = bits::signExtend<16, int64_t>(instr.d);
+      arg.constantSigned = little_endian::signExtend<16, int64_t>(instr.d);
       break;
    case Fields::ds:
       arg.type = Result::ConstantSigned;
-      arg.constantSigned = bits::signExtend<16>(static_cast<int64_t>(instr.ds) << 2);
+      arg.constantSigned = little_endian::signExtend<16>(static_cast<int64_t>(instr.ds) << 2);
       break;
    case Fields::l:
       arg.type = Result::Constant;
@@ -111,14 +108,14 @@ Result::Arg disField(State *state, Instruction instr, ppc::Field field)
       arg.type = Result::Address;
 
       if (instr.aa) {
-         arg.address = bits::signExtend<26>(static_cast<uint64_t>(instr.li) << 2);
+         arg.address = little_endian::signExtend<26>(static_cast<uint64_t>(instr.li) << 2);
       } else {
-         arg.address = state->cia + bits::signExtend<26>(static_cast<uint64_t>(instr.li) << 2);
+         arg.address = state->cia + little_endian::signExtend<26>(static_cast<uint64_t>(instr.li) << 2);
       }
       break;
    case Fields::simm:
       arg.type = Result::ConstantSigned;
-      arg.constantSigned = bits::signExtend<16, int64_t>(instr.simm);
+      arg.constantSigned = little_endian::signExtend<16, int64_t>(instr.simm);
       break;
    case Fields::rA:
       arg.type = Result::Register;

@@ -12,7 +12,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\analyse.cpp" />
-    <ClCompile Include="..\..\..\src\imports.cpp" />
     <ClCompile Include="..\..\..\src\kernel.cpp" />
     <ClCompile Include="..\..\..\src\main.cpp" />
     <ClCompile Include="..\..\..\src\system.cpp" />
@@ -21,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\src\kernel\kernel.h" />
+    <ClInclude Include="..\..\..\src\kernel\module.h" />
     <ClInclude Include="..\..\..\src\system.h" />
     <ClInclude Include="..\..\..\src\xex\aes.h" />
     <ClInclude Include="..\..\..\src\xex\biginputstream.h" />
@@ -76,7 +76,11 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>common.lib;powerpc.lib;disassembler.lib;interpreter.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>common.lib;powerpc.lib;disassembler.lib;interpreter.lib;connectx.lib;createprofile.lib;vk.lib;xam.lib;xapi.lib;xbdm.lib;xboxkrnl.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <FixedBaseAddress>
+      </FixedBaseAddress>
+      <BaseAddress>0x1000000</BaseAddress>
+      <RandomizedBaseAddress>false</RandomizedBaseAddress>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">

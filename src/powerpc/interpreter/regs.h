@@ -1,3 +1,6 @@
+#ifndef REGS_H
+#define REGS_H
+
 namespace ppc 
 {
 
@@ -16,11 +19,11 @@ namespace Interpreter
 #define gprw(r) reinterpret<uint32_t>(state->reg.gpr[r])
 #define gprsw(r) reinterpret<int32_t>(state->reg.gpr[r])
 
-#define fpr(id) state->reg.fpr[id]
-#define fpscr(n) bits::field<uint32_t>(state->reg.fpscr.value, n * 4, 4)
+#define fpr(r) state->reg.fpr[r]
+#define fpscr(n) state->reg.fpscr.crn[n]
 
-#define crf(n) bits::field<uint32_t>(state->reg.cr.value, n * 4, 4)
-#define crb(n) bits::field<uint32_t>(state->reg.cr.value, n, 1)
+#define crf(n) state->reg.cr.crn[n]
+#define crb(n) state->reg.cr.crb[n]
 
 template<typename DstType, typename SrcType>
 static inline DstType& reinterpret(SrcType& value)
@@ -31,3 +34,5 @@ static inline DstType& reinterpret(SrcType& value)
 } // namespace Interpreter
 
 } // namespace ppc 
+
+#endif // REGS_H

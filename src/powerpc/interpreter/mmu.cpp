@@ -4,7 +4,6 @@
 #include "powerpc/instructions.h"
 
 #include "common/log.h"
-#include "common/bits.h"
 #include "common/memory.h"
 
 #include <limits>
@@ -245,7 +244,7 @@ bool slbia(State *state, Instruction instr)
 /* SLB Invalidate Entry */
 bool slbie(State *state, Instruction instr)
 {
-   auto esid = (gpr(instr.rA) >> 28) & bits::mask<uint64_t>(36);
+   auto esid = (gpr(instr.rA) >> 28) & little_endian::make_bit_mask<ppc::reg_t, 36>();
    auto cls = (gpr(instr.rA) >> 27) & 1;
 
    for (auto &entry : state->reg.slb) {
@@ -260,7 +259,7 @@ bool slbie(State *state, Instruction instr)
 /* SLB Move From Entry ESID */
 bool slbmfee(State *state, Instruction instr)
 {
-   auto idx = gpr(instr.rB) & bits::mask<ppc::reg_t>(12);
+   auto idx = gpr(instr.rB) & little_endian::make_bit_mask<ppc::reg_t, 12>();
 
    if (idx > state->reg.slb.size()) {
       raise(state, ppc::Exceptions::ProgramIllegalInstruction);
@@ -281,7 +280,7 @@ bool slbmfee(State *state, Instruction instr)
 /* SLB Move From Entry VSID */
 bool slbmfev(State *state, Instruction instr)
 {
-   auto idx = gpr(instr.rB) & bits::mask<ppc::reg_t>(12);
+   auto idx = gpr(instr.rB) & little_endian::make_bit_mask<ppc::reg_t, 12>();
 
    if (idx > state->reg.slb.size()) {
       raise(state, ppc::Exceptions::ProgramIllegalInstruction);

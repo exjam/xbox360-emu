@@ -7,7 +7,6 @@
 
 #include "powerpc/interpreter/interpreter.h"
 #include "common/memory.h"
-#include "common/bits.h"
 #include <regex>
 
 Test::Test() :
@@ -190,12 +189,12 @@ Test::Register Test::getRegister(ppc::Interpreter::State &state, const std::stri
 
    /* XER Carry */
    if (name.compare("%xer[ca]") == 0) {
-      return Register(RegisterType::BitField64, bits::field<uint64_t>(state.reg.xer.value, 34, 1));
+      return Register(RegisterType::BitField64, little_endian::make_bit_field(state.reg.xer.value, 34, 35));
    }
 
    /* XER Overflow */
    if (name.compare("%xer[ov]") == 0) {
-      return Register(RegisterType::BitField64, bits::field<uint64_t>(state.reg.xer.value, 33, 1));
+      return Register(RegisterType::BitField64, little_endian::make_bit_field(state.reg.xer.value, 33, 34));
    }
 
    /* Condition Register Field */
@@ -205,7 +204,7 @@ Test::Register Test::getRegister(ppc::Interpreter::State &state, const std::stri
       auto field = std::stol(smatch[1].str());
 
       if (field >= 0 && field <= 8) {
-         return Register(RegisterType::BitField32, bits::field<uint32_t>(state.reg.cr.value, 4 * field, 4));
+         return Register(RegisterType::BitField32, state.reg.cr.crn[field]);
       }
    }
 
@@ -216,7 +215,7 @@ Test::Register Test::getRegister(ppc::Interpreter::State &state, const std::stri
       auto bit = std::stol(smatch[1].str());
 
       if (bit >= 0 && bit <= 31) {
-         return Register(RegisterType::BitField32, bits::field<uint32_t>(state.reg.cr.value, bit, 1));
+         return Register(RegisterType::BitField32, little_endian::make_bit_field(state.reg.cr.value, bit, bit));
       }
    }
 
@@ -249,10 +248,10 @@ bool Test::setRegister(ppc::Interpreter::State &state, const std::string &name, 
       *reinterpret_cast<double*>(reg.ptr) = static_cast<double>(value);
       break;
    case RegisterType::BitField32:
-      *reinterpret_cast<bits::field<uint32_t>*>(reg.buf) = static_cast<uint32_t>(value);
+      *reinterpret_cast<dyn_bit_field_t<uint32_t>*>(reg.buf) = static_cast<uint32_t>(value);
       break;
    case RegisterType::BitField64:
-      *reinterpret_cast<bits::field<uint64_t>*>(reg.buf) = static_cast<uint64_t>(value);
+      *reinterpret_cast<dyn_bit_field_t<uint64_t>*>(reg.buf) = static_cast<uint64_t>(value);
       break;
    default:
       return false;
@@ -287,10 +286,10 @@ bool Test::checkRegister(ppc::Interpreter::State &state, const std::string &name
       return *reinterpret_cast<double*>(reg.ptr) == static_cast<double>(value);
 
    case RegisterType::BitField32:
-      return *reinterpret_cast<bits::field<uint32_t>*>(reg.buf) == static_cast<uint32_t>(value);
+      return *reinterpret_cast<dyn_bit_field_t<uint32_t>*>(reg.buf) == static_cast<uint32_t>(value);
 
    case RegisterType::BitField64:
-      return *reinterpret_cast<bits::field<uint64_t>*>(reg.buf) == static_cast<uint64_t>(value);
+      return *reinterpret_cast<dyn_bit_field_t<uint64_t>*>(reg.buf) == static_cast<uint64_t>(value);
    }
 
    return false;

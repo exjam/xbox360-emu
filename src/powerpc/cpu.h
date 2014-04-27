@@ -1,7 +1,8 @@
 #ifndef PPC_CPU_H
 #define PPC_CPU_H
 
-#include "../common/flags.h"
+#include "common/flags.h"
+#include "common/bit_array.h"
 
 #include <stdint.h>
 #include <vector>
@@ -68,6 +69,11 @@ union Fpscr
    {
       uint32_t cr1 : 4;
       uint32_t : 28;
+   };
+
+   struct
+   {
+      bit_array_t<uint32_t, 4> crn;
    };
 
    struct
@@ -141,6 +147,16 @@ union Cr
       uint32_t cr5 : 4;
       uint32_t cr6 : 4;
       uint32_t cr7 : 4;
+   };
+
+   struct
+   {
+      bit_array_t<uint32_t, 4> crn;
+   };
+
+   struct
+   {
+      bit_array_t<uint32_t, 1> crb;
    };
 };
 

@@ -1,7 +1,7 @@
 #include "interpreter.h"
 #include "regs.h"
 
-#include "common/bits.h"
+#include "common/endian.h"
 
 namespace ppc 
 {
@@ -13,9 +13,9 @@ namespace Interpreter
 bool b(State *state, Instruction instr)
 {
    if (instr.aa) {
-      state->nia = bits::signExtend<26>(static_cast<uint64_t>(instr.li) << 2);
+      state->nia = little_endian::signExtend<26>(static_cast<uint64_t>(instr.li) << 2);
    } else {
-	  state->nia = state->cia + bits::signExtend<26>(static_cast<uint64_t>(instr.li) << 2);
+      state->nia = state->cia + little_endian::signExtend<26>(static_cast<uint64_t>(instr.li) << 2);
    }
 
    if (instr.lk) {
@@ -68,9 +68,9 @@ bool bcx(State *state, Instruction instr)
          state->nia = state->reg.lr & 0xFFFFFFFC;
       } else {
          if (instr.aa) {
-            state->nia = bits::signExtend<16>(static_cast<uint64_t>(instr.bd) << 2);
+            state->nia = little_endian::signExtend<16>(static_cast<uint64_t>(instr.bd) << 2);
          } else {
-            state->nia = state->cia + bits::signExtend<16>(static_cast<uint64_t>(instr.bd) << 2);
+            state->nia = state->cia + little_endian::signExtend<16>(static_cast<uint64_t>(instr.bd) << 2);
          }
       }
 
@@ -115,9 +115,9 @@ bool cmpx(State *state, Instruction instr)
 
    if (instr.l == 0) {
       if (std::numeric_limits<Type>::is_signed) {
-         a = bits::signExtend<32, Type>(gpr(instr.rA));
+         a = little_endian::signExtend<32, Type>(gpr(instr.rA));
       } else {
-         a = bits::zeroExtend<32, Type>(gpr(instr.rA));
+         a = little_endian::zeroExtend<32, Type>(gpr(instr.rA));
       }
    } else {
       a = static_cast<Type>(gpr(instr.rA));
@@ -125,15 +125,15 @@ bool cmpx(State *state, Instruction instr)
 
    if (Flags & CmpxImmediate) {
       if (std::numeric_limits<Type>::is_signed) {
-         b = bits::signExtend<16, Type>(instr.simm);
+         b = little_endian::signExtend<16, Type>(instr.simm);
       } else {
          b = instr.uimm;
       }
    } else if (instr.l == 0) {
       if (std::numeric_limits<Type>::is_signed) {
-         b = bits::signExtend<32, Type>(gpr(instr.rB));
+         b = little_endian::signExtend<32, Type>(gpr(instr.rB));
       } else {
-         b = bits::zeroExtend<32, Type>(gpr(instr.rB));
+         b = little_endian::zeroExtend<32, Type>(gpr(instr.rB));
       }
    } else {
       b = static_cast<Type>(gpr(instr.rB));

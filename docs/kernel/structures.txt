@@ -53,21 +53,21 @@ KAPC_STATE : 0x17
 	0x16 : BOOLEAN UserApcPending
 	
 KAPC : 0x28
-    0x00 : CSHORT Type;
-    0x02 : KPROCESSOR_MODE ApcMode
+	0x00 : CSHORT Type;
+	0x02 : KPROCESSOR_MODE ApcMode
 	0x03 : UCHAR ???
-    0x04 : KTHREAD *Thread
+	0x04 : KTHREAD *Thread
 	0x08 : LIST_ENTRY ApcListEntry
-    0x10 : PKKERNEL_ROUTINE KernelRoutine
-    0x14 : PKRUNDOWN_ROUTINE RundownRoutine
-    0x18 : PKNORMAL_ROUTINE NormalRoutine
-    0x1C : PVOID NormalContext
-    0x20 : PVOID SystemArgument1
-    0x24 : PVOID SystemArgument2
+	0x10 : PKKERNEL_ROUTINE KernelRoutine
+	0x14 : PKRUNDOWN_ROUTINE RundownRoutine
+	0x18 : PKNORMAL_ROUTINE NormalRoutine
+	0x1C : PVOID NormalContext
+	0x20 : PVOID SystemArgument1
+	0x24 : PVOID SystemArgument2
 
 KSEMAPHORE : 0x14
-    0x00 : DISPATCHER_HEADER Header
-    0x10 : LONG Limit
+	0x00 : DISPATCHER_HEADER Header
+	0x10 : LONG Limit
 
 KSPIN_LOCK : 0x4
 	0x00 : ULONG_PTR
@@ -79,24 +79,24 @@ KTHREAD : ?
 	0x40 : KWAIT_BLOCK TimerWaitBlock
 	0x58 : DWORD KernelTime
 	0x5C : PVOID InitialStack
-    0x60 : PVOID StackLimit
-    0x64 : PVOID KernelStack
+	0x60 : PVOID StackLimit
+	0x64 : PVOID KernelStack
 	0x68 : PVOID TlsData
 	0x6C : UCHAR State
-    0x6D : BOOLEAN Alerted[2]
+	0x6D : BOOLEAN Alerted[2]
 	0x6F : BOOLEAN Alertable
-    0x70 : SCHAR Priority
+	0x70 : SCHAR Priority
 	0x71 : UCHAR FpuExceptionEnable
 	0x72 : UCHAR CreateProcessType
 	0x73 : UCHAR CurrentProcessType
 	0x74 : KAPC_STATE ApcState
-    0x8B : BOOLEAN ApcQueueable
+	0x8B : BOOLEAN ApcQueueable
 	0x8C : KSPIN_LOCK ApcQueueLock
 	0x90 : ULONG ContextSwitches
 	0x94 : LIST_ENTRY ReadyListEntry
-    0x9C : ULONG MsrEnableMask
+	0x9C : ULONG MsrEnableMask
 	0xA0 : LONG_PTR WaitStatus
-    0xA4 : KIRQL WaitIrql
+	0xA4 : KIRQL WaitIrql
 	0xA5 : KPROCESSOR_MODE WaitMode
 	0xA6 : BOOLEAN WaitNext
 	0xA7 : UCHAR WaitReason

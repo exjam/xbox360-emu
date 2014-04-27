@@ -1,4 +1,9 @@
 cldoc/*
+*.pdf
+tmp.elf
+tools/codegraph
+tools/debugger
+tools/gdbstub
 
 #################
 ## Eclipse

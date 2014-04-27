@@ -7,11 +7,20 @@
 #include "common/log.h"
 #include "common/memory.h"
 
+#include "kernel/xboxkrnl/thread.h"
+
+#include "kernel/xboxkrnl/thread.h"
+#include "kernel/xboxkrnl/process.h"
+
 #include <fstream>
-#include <Windows.h>
 
 System::System()
 {
+}
+
+xex::Binary *System::getBinary()
+{
+   return &mBinary;
 }
 
 bool System::load(const std::string &path)
@@ -29,71 +38,55 @@ bool System::load(const std::string &path)
    test.load(file, mBinary);
    file.close();
 
-   if (!initKernel()) {
-      xDebug() << "Could not resolve init kernel for " << path;
-      return false;
-   }
-
    return true;
 }
 
-xex::Binary *System::getXexBinary()
+bool System::start()
 {
-   return &mBinary;
+   be_ptr32_t<Thread> thread;
+
+   // Initialize kernel
+   initKernel();
+
+   // Create main thread
+   ExCreateThread(reinterpret_cast<be_uint32_t*>(&thread),
+                  mBinary.header.defaultStackSize.size,
+                  nullptr,
+                  nullptr,
+                  reinterpret_cast<void*>(mBinary.header.entryPoint.address),
+                  nullptr,
+                  0);
+
+   // Swap pointer back to little endian memory...
+   thread->join();
+
+   return true;
 }
 
 void System::resumeThread(Thread *thread)
 {
    ppc::Instruction ins;
-   ppc::Interpreter::State *state;
+   auto state = reinterpret_cast<ppc::Interpreter::State*>(thread->getState());
 
-   if (std::find(mThreads.begin(), mThreads.end(), thread) == mThreads.end()) {
-      mThreads.push_back(thread);
-   }
-   
-   if (!thread->stack) {
-      thread->stack = new uint8_t[thread->stackSize];
-   }
+   if (!state) {
+      // Create a new interpreter state for this thread
+      state = new ppc::Interpreter::State();
+      thread->setState(state);
 
-   if (!thread->state) {
-      auto state = new ppc::Interpreter::State();
-      auto kthread = new KThread();
-      auto kprocess = new KProcess();
-      auto pcr = new KPcr();
-
-      memset(pcr, 0, sizeof(KPcr));
-      memset(kthread, 0, sizeof(KThread));
-      memset(kprocess, 0, sizeof(KProcess));
+      // Zero it first pls..
       memset(state, 0, sizeof(ppc::Interpreter::State));
-      
-      thread->state = state;
-      thread->pcr = pcr;
-      pcr->PrcbData.CurrentThread = kthread;
-      kthread->ApcState.Process = kprocess;
 
-      kthread->ThreadId = GetCurrentThreadId();
-
-      // Set up TLS
-      kprocess->SizeOfTlsSlots = mBinary.header.tlsInfo.dataSize * mBinary.header.tlsInfo.slotCount;
-      memset(kprocess->TlsSlotBitmap, 0xff, 8 * 4);
-      
-      // TlsData works like stack, subtracts from ptr!
-      pcr->TlsData = (new uint8_t[kprocess->SizeOfTlsSlots]) + kprocess->SizeOfTlsSlots;
-      
-      state->cia = thread->startAddress;
+      // Set the entry point
+      state->cia = thread->getStartAddress().getRawPointer();
       state->nia = state->cia + 4;
 
       // Initial register values
-      state->reg.gpr[1] = reinterpret_cast<uint64_t>(thread->stack) + thread->stackSize;
-      state->reg.gpr[3] = thread->startParameter;
-      state->reg.gpr[13] = reinterpret_cast<uint64_t>(thread->pcr);
+      state->reg.gpr[1] = thread->getStackBase().getRawPointer();
+      state->reg.gpr[3] = thread->getStartParameter().getRawPointer();
+      state->reg.gpr[13] = thread->getPcr().getRawPointer();
    }
 
-   state = reinterpret_cast<ppc::Interpreter::State *>(thread->state);
-
-   FILE* fh;
-   fopen_s(&fh, "out.txt", "w");
-
+   // XXX: Debug
    analyse(0x82F088D0);
 
    for (unsigned i = 0; i < 99999; ++i) {
@@ -110,27 +103,11 @@ void System::resumeThread(Thread *thread)
 
       ppc::Interpreter::decode(state, ins);
 
-
       if (state->nia != state->cia + 4) {
-         fprintf(fh, "%08X branch to %08X\n", state->cia, state->nia);
          xDebug() << "BRANCH";
       }
 
       state->cia = state->nia;
       state->nia = state->cia + 4;
    }
-}
-
-bool System::start()
-{
-   Thread *thread = new Thread();
-
-   memset(thread, 0, sizeof(Thread));
-
-   thread->stackSize    = mBinary.header.defaultStackSize.size;
-   thread->startAddress = mBinary.header.entryPoint.address;
-
-   resumeThread(thread);
-
-   return true;
 }

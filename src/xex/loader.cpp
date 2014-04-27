@@ -28,17 +28,17 @@ bool Loader::load(std::istream &istr, xex::Binary &binary)
       >> header.optHeaderCount;
 
    for (uint32_t i = 0; i < header.optHeaderCount; ++i) {
-      uint32_t id, dataOffset, length;
+      uint32_t key, dataOffset, length;
       uint32_t pos, read, start, end;
          
       in
-         >> id
+         >> key
          >> dataOffset;
 
       pos = in.tell();
 
       /* Get header length */
-      length = id & 0xFF;
+      length = key & 0xFF;
 
       if (length == 0 || length == 1) {
          in.skip(-4);
@@ -54,8 +54,16 @@ bool Loader::load(std::istream &istr, xex::Binary &binary)
 
       start = in.tell();
                   
+      /* Read raw data for RtlImageXexHeaderField */
+      OptionalRawHeader raw;
+      raw.key = key;
+      raw.data.resize(length);
+      in.read(raw.data.data(), length);
+      in.seek(start);
+      header.optionalRaw.emplace_back(raw);
+
       /* Parse header data */
-      switch (static_cast<Headers>(id >> 8)) {
+      switch (static_cast<Headers>(key >> 8)) {
       case xex::Headers::ResourceInfo:
          readHeader(in, length, header.resourceInfo);
          break;
@@ -150,12 +158,12 @@ bool Loader::load(std::istream &istr, xex::Binary &binary)
          readHeader(in, length, header.exportsByName);
          break;
       default:
-         xDebug() << "Unknown header found 0x" << Log::hex(id, 8);
+         xDebug() << "Unknown header found 0x" << Log::hex(key, 8);
       }
 
       end = in.tell();
       read = end - start;
-      xDebug() << "Header 0x" << Log::hex(id, 8) << " read " << read << " / " << length << " bytes";
+      xDebug() << "Header 0x" << Log::hex(key, 8) << " read " << read << " / " << length << " bytes";
 
       in.seek(pos);
    }
@@ -221,6 +229,149 @@ bool Loader::readImageUncompressed(BigInputStream &in, xex::Header &header)
 
 bool Loader::readImageNormalCompression(BigInputStream &in, xex::Header &header)
 {
+   switch (header.baseFileFormat.encryption.type) {
+   case xex::BaseFileFormat::Encryption::Encrypted:
+   {
+      break;
+   }
+   default:
+      xDebug() << "Unimplemented readImageNormalCompression encryption type " << header.baseFileFormat.encryption.type;
+   }
+/*
+  const size_t exe_length = xex_length - header->exe_offset;
+  const uint8_t *exe_buffer = (const uint8_t*)xex_addr + header->exe_offset;
+
+  // src -> dest:
+  // - decrypt (if encrypted)
+  // - de-block:
+  //    4b total size of next block in uint8_ts
+  //   20b hash of entire next block (including size/hash)
+  //    Nb block uint8_ts
+  // - decompress block contents
+
+  int result_code = 1;
+
+  uint8_t *compress_buffer = NULL;
+  const uint8_t *p = NULL;
+  uint8_t *d = NULL;
+  uint8_t *deblock_buffer = NULL;
+  size_t block_size = 0;
+  size_t uncompressed_size = 0;
+  struct mspack_system *sys = NULL;
+  mspack_memory_file *lzxsrc = NULL;
+  mspack_memory_file *lzxdst = NULL;
+  struct lzxd_stream *lzxd = NULL;
+
+  // Decrypt (if needed).
+  bool free_input = false;
+  const uint8_t *input_buffer = exe_buffer;
+  const size_t input_size = exe_length;
+  switch (header->file_format_info.encryption_type) {
+  case XEX_ENCRYPTION_NONE:
+    // No-op.
+    break;
+  case XEX_ENCRYPTION_NORMAL:
+    // TODO: a way to do without a copy/alloc?
+    free_input = true;
+    input_buffer = (const uint8_t*)xe_calloc(input_size);
+    XEEXPECTNOTNULL(input_buffer);
+    xe_xex2_decrypt_buffer(header->session_key, exe_buffer, exe_length,
+                           (uint8_t*)input_buffer, input_size);
+    break;
+  default:
+    XEASSERTALWAYS();
+    return false;
+  }
+
+  compress_buffer = (uint8_t*)xe_calloc(exe_length);
+  XEEXPECTNOTNULL(compress_buffer);
+
+  p = input_buffer;
+  d = compress_buffer;
+
+  // De-block.
+  deblock_buffer = (uint8_t*)xe_calloc(input_size);
+  XEEXPECTNOTNULL(deblock_buffer);
+  block_size = header->file_format_info.compression_info.normal.block_size;
+  while (block_size) {
+    const uint8_t *pnext = p + block_size;
+    const size_t next_size = XEGETINT32BE(p);
+    p += 4;
+    p += 20; // skip 20b hash
+
+    while(true) {
+      const size_t chunk_size = (p[0] << 8) | p[1];
+      p += 2;
+      if (!chunk_size) {
+        break;
+      }
+      xe_copy_memory(d, exe_length - (d - compress_buffer), p, chunk_size);
+      p += chunk_size;
+      d += chunk_size;
+
+      uncompressed_size += 0x8000;
+    }
+
+    p = pnext;
+    block_size = next_size;
+  }
+
+  // Allocate in-place the XEX memory.
+  uint32_t alloc_result = (uint32_t)memory->HeapAlloc(
+      header->exe_address, uncompressed_size,
+      MEMORY_FLAG_ZERO);
+  if (!alloc_result) {
+    XELOGE("Unable to allocate XEX memory at %.8X-%.8X.",
+           header->exe_address, uncompressed_size);
+    result_code = 2;
+    XEFAIL();
+  }
+  uint8_t *buffer = memory->Translate(header->exe_address);
+
+  // Setup decompressor and decompress.
+  sys = mspack_memory_sys_create();
+  XEEXPECTNOTNULL(sys);
+  lzxsrc = mspack_memory_open(sys, (void*)compress_buffer, d - compress_buffer);
+  XEEXPECTNOTNULL(lzxsrc);
+  lzxdst = mspack_memory_open(sys, buffer, uncompressed_size);
+  XEEXPECTNOTNULL(lzxdst);
+  lzxd = lzxd_init(
+      sys,
+      (struct mspack_file *)lzxsrc,
+      (struct mspack_file *)lzxdst,
+      header->file_format_info.compression_info.normal.window_bits,
+      0,
+      32768,
+      (off_t)header->loader_info.image_size);
+  XEEXPECTNOTNULL(lzxd);
+  XEEXPECTZERO(lzxd_decompress(lzxd, (off_t)header->loader_info.image_size));
+
+  result_code = 0;
+
+XECLEANUP:
+  if (lzxd) {
+    lzxd_free(lzxd);
+    lzxd = NULL;
+  }
+  if (lzxsrc) {
+    mspack_memory_close(lzxsrc);
+    lzxsrc = NULL;
+  }
+  if (lzxdst) {
+    mspack_memory_close(lzxdst);
+    lzxdst = NULL;
+  }
+  if (sys) {
+    mspack_memory_sys_destroy(sys);
+    sys = NULL;
+  }
+  xe_free(compress_buffer);
+  xe_free(deblock_buffer);
+  if (free_input) {
+    xe_free((void*)input_buffer);
+  }
+  return result_code;
+*/
    return false;
 }
 
@@ -246,8 +397,6 @@ bool Loader::readImageBasicCompression(BigInputStream &in, xex::Header &header)
    }
 
    switch(header.baseFileFormat.encryption.type) {
-   /*case xex::BaseFileFormat::Encryption::Unencrypted:
-      break;*/
    case xex::BaseFileFormat::Encryption::Encrypted:
    {
       Rijndael crypt;
@@ -356,7 +505,6 @@ void Loader::loadImportLibraries(xex::ImportLibraries &importLibraries)
             import.ordinal = ordinal;
             import.thunk   = 0;
             import.args    = 0;
-            import.handle  = nullptr;
             library.imports.push_back(import);
             break;
          }

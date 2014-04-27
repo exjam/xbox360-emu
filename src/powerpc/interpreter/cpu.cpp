@@ -1,7 +1,7 @@
 #include "interpreter.h"
 #include "regs.h"
 
-#include "common/bits.h"
+#include "common/endian.h"
 
 namespace ppc 
 {
@@ -11,13 +11,13 @@ namespace Interpreter
 
 bool handleExceptions(State *state)
 {
-   auto es1 = bits::makeRange<33, 36>(state->reg.srr1);
-   auto es2 = bits::makeRange<42, 47>(state->reg.srr1);
+   auto es1 = little_endian::make_bit_field<33, 36>(state->reg.srr1);
+   auto es2 = little_endian::make_bit_field<42, 47>(state->reg.srr1);
 
-   bits::copy<0>(state->reg.srr1, state->reg.msr.value);
-   bits::copy<48, 55>(state->reg.srr1, state->reg.msr.value);
-   bits::copy<57, 59>(state->reg.srr1, state->reg.msr.value);
-   bits::copy<62, 63>(state->reg.srr1, state->reg.msr.value);
+   little_endian::copy_bit<0>(state->reg.srr1, state->reg.msr.value);
+   little_endian::copy_bits<48, 55>(state->reg.srr1, state->reg.msr.value);
+   little_endian::copy_bits<57, 59>(state->reg.srr1, state->reg.msr.value);
+   little_endian::copy_bits<62, 63>(state->reg.srr1, state->reg.msr.value);
 
    state->reg.msr.sf = 1;
    state->reg.msr.pow = 0;
@@ -190,15 +190,18 @@ bool mtmsr(State *state, Instruction instr)
    auto s = gpr(instr.rS);
 
    if (instr.l15 == 0) {
-      state->reg.msr.ir = bits::get(s, 58) | bits::get(s, 49);
-      state->reg.msr.dr = bits::get(s, 59) | bits::get(s, 49);
+      state->reg.msr.ir = little_endian::get_bit<58>(s)
+                        | little_endian::get_bit<49>(s);
 
-      bits::copy<32, 47>(state->reg.msr.value, s);
-      bits::copy<49, 50>(state->reg.msr.value, s);
-      bits::copy<52, 57>(state->reg.msr.value, s);
-      bits::copy<60, 63>(state->reg.msr.value, s);
+      state->reg.msr.dr = little_endian::get_bit<59>(s)
+                        | little_endian::get_bit<49>(s);
+
+      little_endian::copy_bits<32, 47>(state->reg.msr.value, s);
+      little_endian::copy_bits<49, 50>(state->reg.msr.value, s);
+      little_endian::copy_bits<52, 57>(state->reg.msr.value, s);
+      little_endian::copy_bits<60, 63>(state->reg.msr.value, s);
    } else {
-      bits::copy<48, 62>(state->reg.msr.value, s);
+      little_endian::copy_bits<48, 62>(state->reg.msr.value, s);
    }
 
    return true;
@@ -210,16 +213,19 @@ bool mtmsrd(State *state, Instruction instr)
    auto s = gpr(instr.rS);
 
    if (instr.l15 == 0) {
-      state->reg.msr.sf = bits::get(s, 0) | bits::get(s, 1);
-      state->reg.msr.dr = bits::get(s, 59) | bits::get(s, 49);
+      state->reg.msr.sf = little_endian::get_bit<0>(s)
+                        | little_endian::get_bit<1>(s);
 
-      bits::copy<1, 2>(state->reg.msr.value, s);
-      bits::copy<4, 47>(state->reg.msr.value, s);
-      bits::copy<49, 50>(state->reg.msr.value, s);
-      bits::copy<52, 57>(state->reg.msr.value, s);
-      bits::copy<60, 63>(state->reg.msr.value, s);
+      state->reg.msr.dr = little_endian::get_bit<59>(s)
+                        | little_endian::get_bit<49>(s);
+
+      little_endian::copy_bits<1, 2>(state->reg.msr.value, s);
+      little_endian::copy_bits<4, 47>(state->reg.msr.value, s);
+      little_endian::copy_bits<49, 50>(state->reg.msr.value, s);
+      little_endian::copy_bits<52, 57>(state->reg.msr.value, s);
+      little_endian::copy_bits<60, 63>(state->reg.msr.value, s);
    } else {
-      bits::copy<48, 62>(state->reg.msr.value, s);
+      little_endian::copy_bits<48, 62>(state->reg.msr.value, s);
    }
 
    return true;
@@ -256,20 +262,21 @@ bool mtspr(State *state, Instruction instr)
 /* Return from Interrupt Doubleword */
 bool rfid(State *state, Instruction instr)
 {
-   state->reg.msr.sf = bits::get(state->reg.srr1, 0)
-                     | bits::get(state->reg.srr1, 1);
+   
+   state->reg.msr.sf = little_endian::get_bit(state->reg.srr1, 0)
+                     | little_endian::get_bit(state->reg.srr1, 1);
 
-   state->reg.msr.ir = bits::get(state->reg.srr1, 58)
-                     | bits::get(state->reg.srr1, 49);
+   state->reg.msr.ir = little_endian::get_bit(state->reg.srr1, 58)
+                     | little_endian::get_bit(state->reg.srr1, 49);
 
-   state->reg.msr.dr = bits::get(state->reg.srr1, 59)
-                     | bits::get(state->reg.srr1, 49);
+   state->reg.msr.dr = little_endian::get_bit(state->reg.srr1, 59)
+                     | little_endian::get_bit(state->reg.srr1, 49);
 
-   bits::copy< 1,  2>(state->reg.msr.value, state->reg.srr1);
-   bits::copy< 4, 32>(state->reg.msr.value, state->reg.srr1);
-   bits::copy<37, 41>(state->reg.msr.value, state->reg.srr1);
-   bits::copy<52, 58>(state->reg.msr.value, state->reg.srr1);
-   bits::copy<60, 63>(state->reg.msr.value, state->reg.srr1);
+   little_endian::copy_bits< 1, 2>(state->reg.msr.value, state->reg.srr1);
+   little_endian::copy_bits< 4, 32>(state->reg.msr.value, state->reg.srr1);
+   little_endian::copy_bits<37, 41>(state->reg.msr.value, state->reg.srr1);
+   little_endian::copy_bits<52, 58>(state->reg.msr.value, state->reg.srr1);
+   little_endian::copy_bits<60, 63>(state->reg.msr.value, state->reg.srr1);
    
    return true;
 }
@@ -328,7 +335,7 @@ bool tdi(State *state, Instruction instr)
    return tx(state,
              instr,
              gpr(instr.rA),
-             bits::signExtend<16, uint64_t>(instr.simm));
+             little_endian::signExtend<16, uint64_t>(instr.simm));
 }
 
 /* Trap Word */
@@ -336,8 +343,8 @@ bool tw(State *state, Instruction instr)
 {
    return tx(state,
              instr,
-             bits::signExtend<32, uint64_t>(gprw(instr.rA)),
-             bits::signExtend<32, uint64_t>(gprw(instr.rB)));
+             little_endian::signExtend<32, uint64_t>(gprw(instr.rA)),
+             little_endian::signExtend<32, uint64_t>(gprw(instr.rB)));
 }
 
 /* Trap Word Immediate */
@@ -345,8 +352,8 @@ bool twi(State *state, Instruction instr)
 {
    return tx(state,
              instr,
-             bits::signExtend<32, uint64_t>(gprw(instr.rA)),
-             bits::signExtend<16, uint64_t>(instr.simm));
+             little_endian::signExtend<32, uint64_t>(gprw(instr.rA)),
+             little_endian::signExtend<16, uint64_t>(instr.simm));
 }
 
 } // namespace Interpreter

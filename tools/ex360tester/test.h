@@ -9,7 +9,7 @@
 #include <sstream>
 
 #include "powerpc/interpreter/interpreter.h"
-#include "common/bits.h"
+#include "common/bit_field.h"
 
 class TestError
 {
@@ -121,10 +121,10 @@ public:
       }
 
       template<typename ValType>
-      Register(RegisterType type, bits::field<ValType> &val) :
+      Register(RegisterType type, dyn_bit_field_t<ValType> &val) :
          type(type)
       {
-         new (buf) bits::field<ValType>(val);
+         new (buf) dyn_bit_field_t<ValType>(val);
       }
 
       RegisterType type;

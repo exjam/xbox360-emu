@@ -4,7 +4,6 @@
 #include "powerpc/instructions.h"
 
 #include "common/log.h"
-#include "common/bits.h"
 #include "common/memory.h"
 
 #include "xex/xex.h"

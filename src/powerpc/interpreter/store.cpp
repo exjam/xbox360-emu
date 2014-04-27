@@ -4,8 +4,8 @@
 #include "powerpc/instructions.h"
 
 #include "common/log.h"
-#include "common/bits.h"
 #include "common/memory.h"
+#include "common/byte_swap.h"
 
 #include <limits>
 
@@ -33,11 +33,11 @@ bool stxx(State *state, Instruction instr)
    DstType value;
 
    if (Flags & StoreDS) {
-      ea = bits::signExtend<16>(static_cast<uint64_t>(instr.ds) << 2);
+      ea = little_endian::signExtend<16>(static_cast<uint64_t>(instr.ds) << 2);
    } else if (Flags & StoreIndexed) {
       ea = gpr(instr.rB);
    } else {
-      ea = bits::signExtend<16, uint64_t>(instr.d);
+      ea = little_endian::signExtend<16, uint64_t>(instr.d);
    }
 
    if (Flags & StoreUpdate) {
@@ -71,7 +71,7 @@ bool stxx(State *state, Instruction instr)
    }
 
    if (Flags & StoreReversed) {
-      value = bits::swap(value);
+      value = byte_swap(value);
    }
 
    Memory::write<DstType>(ea, value);
@@ -224,7 +224,7 @@ bool sthx(State *state, Instruction instr)
 /* Store Multiple Word */
 bool stmw(State *state, Instruction instr)
 {
-   auto ea = gpr0(instr.rA) + bits::signExtend<16, uint64_t>(instr.d);
+   auto ea = gpr0(instr.rA) + little_endian::signExtend<16, uint64_t>(instr.d);
    auto r = instr.rS;
 
    while (r <= 31) {
@@ -237,7 +237,7 @@ bool stmw(State *state, Instruction instr)
 }
 
 /* Store String Word x */
-bool stsw(State *state, Instruction instr, uint64_t ea, uint64_t n)
+bool stsw(State *state, Instruction instr, ptr32_t<uint8_t> ea, uint64_t n)
 {
    auto r = instr.rS - 1;
    auto i = 32;
@@ -247,7 +247,7 @@ bool stsw(State *state, Instruction instr, uint64_t ea, uint64_t n)
          r = (r + 1) % 32;
       }
 
-      Memory::write<uint8_t>(ea, (gpr(r) >> (24 - i)) & 0xFF);
+      *ea = (gpr(r) >> (24 - i)) & 0xFF;
 
       i += 8;
 
@@ -267,7 +267,7 @@ bool stswi(State *state, Instruction instr)
 {
    return stsw(state,
                instr,
-               gpr0(instr.rA),
+               reinterpret_cast<uint8_t*>(gpr0(instr.rA)),
                instr.nb == 0 ? 32 : instr.nb);
 }
 
@@ -276,7 +276,7 @@ bool stswx(State *state, Instruction instr)
 {
    return stsw(state,
                instr,
-               gpr0(instr.rA) + gpr(instr.rB),
+               reinterpret_cast<uint8_t*>(gpr0(instr.rA) + gpr(instr.rB)),
                state->reg.xer.byteCount);
 }
 

@@ -22,9 +22,6 @@
     <ClCompile Include="..\..\..\src\analyse.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\imports.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\src\kernel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -61,6 +58,9 @@
       <Filter>Header Files\xex</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\kernel\kernel.h">
+      <Filter>Header Files\kernel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\kernel\module.h">
       <Filter>Header Files\kernel</Filter>
     </ClInclude>
   </ItemGroup>

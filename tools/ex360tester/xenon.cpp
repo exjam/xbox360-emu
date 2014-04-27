@@ -2,6 +2,7 @@
 #include "tester.h"
 
 #include <Windows.h>
+#include <iostream>
 
 std::pair<DWORD, std::string> execute(const std::string& path, const std::string& args, const std::string &workDir)
 {
@@ -83,6 +84,10 @@ bool assemble(const std::string &in, const std::string &out)
    std::string wd = g_tester.getTestRoot();
 
    auto result = execute(xenonPath + "\\xenon-as.exe", args, wd);
+
+   if (result.first != 0) {
+      std::cout << result.second << std::endl;
+   }
 
    return result.first == 0;
 }

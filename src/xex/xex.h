@@ -176,6 +176,7 @@ struct Header
    uint8_t sessionKey[16];
 
    /* Optional Headers */
+   std::vector<OptionalRawHeader> optionalRaw;
    ResourceInfo resourceInfo;
    BaseFileFormat baseFileFormat;
    BaseReference baseReference;

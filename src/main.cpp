@@ -1,6 +1,8 @@
 #include "system.h"
 #include "common/log.h"
 
+System gSystem;
+
 int main(int argc, char** argv)
 {
    if (argc < 2) {
@@ -8,13 +10,12 @@ int main(int argc, char** argv)
       return -1;
    }
 
-   System emu;
-
    /* Totally legal copy of the game. */
-   if (!emu.load(argv[1])) {
+   if (!gSystem.load(argv[1])) {
       return 0;
    }
 
-   emu.start();
+   gSystem.start();
+
    return 0;
 }
