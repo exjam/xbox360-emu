@@ -77,7 +77,7 @@ bool System::resolveImports(xex::ImportLibraries &imports)
                                        instr.value);
 
                Memory::write<uint64_t>(import.thunk + 4,
-                                       reinterpret_cast<uint64_t>(export_->ptr));
+                                       reinterpret_cast<uint64_t>(export_));
             } else {
                // Write pointer to exported variable at import.address
                Memory::write<uint32_t>(import.address,

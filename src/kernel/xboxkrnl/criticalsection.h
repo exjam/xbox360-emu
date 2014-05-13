@@ -4,20 +4,20 @@
 #include "kernel/xboxkrnl/xboxkrnl.h"
 #include "kernel/xboxkrnl/ntstructs.h"
 
-void
+KSTATUS
 RtlInitializeCriticalSection(ptr32_t<KCriticalSection> cs);
 
-void
+KSTATUS
 RtlInitializeCriticalSectionAndSpinCount(ptr32_t<KCriticalSection> cs,
                                          uint32_t spin);
 
-uint64_t
+KBOOL
 RtlTryEnterCriticalSection(ptr32_t<KCriticalSection> cs);
 
-void
+KSTATUS
 RtlEnterCriticalSection(ptr32_t<KCriticalSection> cs);
 
-void
+KSTATUS
 RtlLeaveCriticalSection(ptr32_t<KCriticalSection> cs);
 
 #endif // ifndef XBOXKRNL_CRITICAL_SECTION_H

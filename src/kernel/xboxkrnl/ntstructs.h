@@ -4,11 +4,16 @@
 #include "kernel/xboxkrnl/xboxkrnl.h"
 #include "common/bigendian.h"
 
+#include <atomic>
+
+class Object;
+
 #pragma pack(push, 1)
 
 // Forward declare all NT structs
 struct KListEntry;
 struct KDispatcherHeader;
+struct KEvent;
 struct KCriticalSection;
 struct KMutant;
 struct KSemaphore;
@@ -38,8 +43,15 @@ CHECK_SIZE(KIrql, 0x1);
 // LIST_ENTRY
 struct KListEntry
 {
-   be_ptr32_t<KListEntry> Front;
-   be_ptr32_t<KListEntry> Back;
+   union {
+      struct
+      {
+         be_ptr32_t<KListEntry> Front;
+         be_ptr32_t<KListEntry> Back;
+      };
+
+      Object *object;
+   };
 };
 
 CHECK_OFFSET(KListEntry, 0x0, Front);
@@ -65,6 +77,15 @@ CHECK_OFFSET(KDispatcherHeader, 0x4, SignalState);
 CHECK_OFFSET(KDispatcherHeader, 0x8, WaitList);
 CHECK_SIZE(KDispatcherHeader, 0x10);
 
+// KEVENT
+struct KEvent
+{
+   KDispatcherHeader Header;
+};
+
+CHECK_OFFSET(KEvent, 0x0, Header);
+CHECK_SIZE(KEvent, 0x10);
+
 // CRITICAL_SECTION
 struct KCriticalSection
 {
@@ -72,9 +93,9 @@ struct KCriticalSection
    // using SpinCount = Header.Absolute;
    // using EntryCount = Header.SignalState;
 
-   be_int32_t LockCount;
-   be_uint32_t RecursionCount;
-   be_uint32_t OwningThread;
+   std::atomic_int32_t LockCount;
+   volatile uint32_t RecursionCount;
+   be_ptr32_t<KThread> OwningThread;
 };
 
 CHECK_OFFSET(KCriticalSection, 0x0, Header);
@@ -279,8 +300,8 @@ struct KThread
    be_uint8_t Preempted;
    be_uint8_t HasTerminated;
    be_uint8_t CurrentProcessor;
-   ptr32_t<KPrcb> CurrentPrcb;
-   ptr32_t<KPrcb> AffinityPrcb;
+   be_ptr32_t<KPrcb> CurrentPrcb;
+   be_ptr32_t<KPrcb> AffinityPrcb;
    be_uint8_t IdlePriorityClass;
    be_uint8_t NormalPriorityClass;
    be_uint8_t TimeCriticalPriorityClass;
@@ -425,9 +446,9 @@ CHECK_OFFSET(KProcess, 0x5C, Win32DefaultHeapHandle);
 // KPRCB
 struct KPrcb
 {
-   ptr32_t<KThread> CurrentThread;
-   ptr32_t<KThread> NextThread;
-   ptr32_t<KThread> IdleThread;
+   be_ptr32_t<KThread> CurrentThread;
+   be_ptr32_t<KThread> NextThread;
+   be_ptr32_t<KThread> IdleThread;
    be_uint8_t Number;
    PADDING(0x3);
    be_uint32_t SetMember;
@@ -654,10 +675,47 @@ CHECK_OFFSET(KLdrDataTableEntry, 0x5c, asEntry.ClosureRoot);
 CHECK_OFFSET(KLdrDataTableEntry, 0x60, asEntry.TraversalParent);
 CHECK_SIZE(KLdrDataTableEntry, 0x64);
 
-using KNTSTATUS = int32_t;
+using KSTATUS = uint64_t; // NTSTATUS
+using KBOOL = uint64_t; // BOOL
 
-#define KSTATUS_SUCCESS   ((KNTSTATUS)0x00000000L)
-#define KSTATUS_NO_MEMORY ((KNTSTATUS)0xC0000017L)
+#define KTRUE 1
+#define KFALSE 0
+
+#define KSTATUS_SUCCESS          static_cast<KSTATUS>(0x00000000)
+#define KSTATUS_ABANDONED_WAIT   static_cast<KSTATUS>(0x00000080)
+#define KSTATUS_TIMEOUT          static_cast<KSTATUS>(0x00000102)
+#define KSTATUS_NO_MEMORY        static_cast<KSTATUS>(0xC0000017)
+
+// KOBJECTS
+enum KObjects
+{
+   EventNotificationObject = 0,
+   EventSynchronizationObject = 1,
+   MutantObject = 2,
+   ProcessObject = 3,
+   QueueObject = 4,
+   SemaphoreObject = 5,
+   ThreadObject = 6,
+   GateObject = 7,
+   TimerNotificationObject = 8,
+   TimerSynchronizationObject = 9,
+   Spare2Object = 10,
+   Spare3Object = 11,
+   Spare4Object = 12,
+   Spare5Object = 13,
+   Spare6Object = 14,
+   Spare7Object = 15,
+   Spare8Object = 16,
+   Spare9Object = 17,
+   ApcObject = 18,
+   DpcObject = 19,
+   DeviceQueueObject = 20,
+   EventPairObject = 21,
+   InterruptObject = 22,
+   ProfileObject = 23,
+   ThreadedDpcObject = 24,
+   MaximumKernelObject = 25
+};
 
 #pragma pack(pop)
 

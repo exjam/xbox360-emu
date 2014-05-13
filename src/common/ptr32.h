@@ -21,6 +21,12 @@ public:
       setPointer(pointer);
    }
 
+   template<typename OtherType, typename OtherStorage>
+   explicit ptr32_t(ptr32_t<OtherType, OtherStorage> &other)
+   {
+      setPointer(reinterpret_cast<Type *>(other.getPointer()));
+   }
+
    ptr32_t<Type, StorageType> & operator =(Type *pointer)
    {
       setPointer(pointer);

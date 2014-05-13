@@ -54,6 +54,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;XBOXKRNL_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <CallingConvention>FastCall</CallingConvention>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -86,7 +87,6 @@
   <ItemGroup>
     <ClCompile Include="..\..\..\..\..\src\kernel\xboxkrnl\debug.cpp" />
     <ClCompile Include="..\..\..\..\..\src\kernel\xboxkrnl\version.cpp" />
-    <ClCompile Include="..\..\..\..\..\src\kernel\xboxkrnl\wait.cpp" />
     <ClCompile Include="..\..\..\..\..\src\kernel\xboxkrnl\virtualmemory.cpp" />
     <ClCompile Include="..\..\..\..\..\src\kernel\xboxkrnl\criticalsection.cpp" />
     <ClCompile Include="..\..\..\..\..\src\kernel\xboxkrnl\process.cpp" />
@@ -96,12 +96,14 @@
     <ClCompile Include="..\..\..\..\..\src\kernel\xboxkrnl\hardware.cpp" />
     <ClCompile Include="..\..\..\..\..\src\kernel\xboxkrnl\xboxkrnl.cpp" />
     <ClCompile Include="..\..\..\..\..\src\kernel\xboxkrnl\xex.cpp" />
+    <ClCompile Include="object.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\..\src\kernel\xboxkrnl\debug.h" />
+    <ClInclude Include="..\..\..\..\..\src\kernel\xboxkrnl\event.h" />
     <ClInclude Include="..\..\..\..\..\src\kernel\xboxkrnl\ntstructs.h" />
+    <ClInclude Include="..\..\..\..\..\src\kernel\xboxkrnl\object.h" />
     <ClInclude Include="..\..\..\..\..\src\kernel\xboxkrnl\version.h" />
-    <ClInclude Include="..\..\..\..\..\src\kernel\xboxkrnl\wait.h" />
     <ClInclude Include="..\..\..\..\..\src\kernel\xboxkrnl\virtualmemory.h" />
     <ClInclude Include="..\..\..\..\..\src\kernel\xboxkrnl\criticalsection.h" />
     <ClInclude Include="..\..\..\..\..\src\kernel\xboxkrnl\process.h" />

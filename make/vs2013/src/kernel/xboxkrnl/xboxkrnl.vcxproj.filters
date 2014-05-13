@@ -39,9 +39,6 @@
     <ClCompile Include="..\..\..\..\..\src\kernel\xboxkrnl\debug.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\..\src\kernel\xboxkrnl\wait.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\..\..\src\kernel\xboxkrnl\virtualmemory.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -49,6 +46,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\..\..\src\kernel\xboxkrnl\hardware.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="object.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -77,9 +77,6 @@
     <ClInclude Include="..\..\..\..\..\src\kernel\xboxkrnl\debug.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\..\src\kernel\xboxkrnl\wait.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\..\..\src\kernel\xboxkrnl\virtualmemory.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -90,6 +87,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\..\src\kernel\xboxkrnl\ntstructs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\src\kernel\xboxkrnl\object.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\src\kernel\xboxkrnl\event.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

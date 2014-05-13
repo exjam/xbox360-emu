@@ -20,7 +20,7 @@ XexGetModuleHandle(ptr32_t<char> lpModuleName,
 uint64_t
 XexCheckExecutablePrivilege(uint32_t priviledge);
 
-void*
+ptr32_t<void>
 RtlImageXexHeaderField(ptr32_t<xex::Binary> binary,
                        uint32_t key);
 

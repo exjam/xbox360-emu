@@ -21,7 +21,7 @@ XexCheckExecutablePrivilege(uint32_t priviledge)
    return (flags >> priviledge) & 1;
 }
 
-void*
+ptr32_t<void>
 RtlImageXexHeaderField(ptr32_t<xex::Binary> binary,
                        uint32_t key)
 {
@@ -31,7 +31,7 @@ RtlImageXexHeaderField(ptr32_t<xex::Binary> binary,
       }
    }
 
-   return nullptr;
+   return 0;
 }
 
 void xboxkrnlXexInit()

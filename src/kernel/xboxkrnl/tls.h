@@ -10,13 +10,13 @@ KiTlsSlotBitmapLock;
 uint64_t
 KeTlsAlloc();
 
-uint64_t
+KBOOL
 KeTlsFree(uint32_t index);
 
 ptr32_t<void>
 KeTlsGetValue(uint32_t index);
 
-uint64_t
+KBOOL
 KeTlsSetValue(uint32_t index, ptr32_t<void> value);
 
 #endif // XBXKRNL_TLS_H

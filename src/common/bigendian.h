@@ -41,6 +41,12 @@ public:
       return *this;
    }
 
+   be_t<Type> &operator ++()
+   {
+      setValue(getValue() + 1);
+      return *this;
+   }
+
 private:
    Type mValue;
 };

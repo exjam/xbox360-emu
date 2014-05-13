@@ -5,7 +5,7 @@
 
 #include <Windows.h>
 
-KNTSTATUS
+KSTATUS
 NtAllocateVirtualMemory(ptr32_t<be_uint32_t> lpBaseAddress,
                         ptr32_t<be_uint32_t> lpRegionSize,
                         uint32_t dwAllocationType,

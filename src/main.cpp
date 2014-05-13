@@ -3,7 +3,7 @@
 
 System gSystem;
 
-int main(int argc, char** argv)
+int __cdecl main(int argc, char** argv)
 {
    if (argc < 2) {
       xDebug() << "Usage: " << argv[0] << " <.xex file>";

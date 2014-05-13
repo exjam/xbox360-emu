@@ -9,7 +9,7 @@
 #include "kernel/xboxkrnl/tls.h"
 #include "kernel/xboxkrnl/version.h"
 #include "kernel/xboxkrnl/virtualmemory.h"
-#include "kernel/xboxkrnl/wait.h"
+#include "kernel/xboxkrnl/object.h"
 #include "kernel/xboxkrnl/xex.h"
 
 #include "kernel/module.h"
@@ -40,6 +40,8 @@ void xboxkrnl::addExports()
    exportFunction(102, KeGetCurrentProcessType);
 
    //exportVariable(173, KeTimeStampBundle);
+
+   exportFunction(157, KeSetEvent);
 
    exportFunction(176, KeWaitForSingleObject);
    exportFunction(177, KfAcquireSpinLock);

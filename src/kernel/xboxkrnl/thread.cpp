@@ -8,7 +8,9 @@
 #include <atomic>
 #include <thread>
 
-std::atomic_uint32_t g_threadIdCounter = 0;
+std::atomic_uint32_t gThreadIdCounter = 0;
+_declspec(thread) Thread *gCurrentThread;
+
 
 Thread::Thread(uint32_t stackSize,
                ptr32_t<void> apiThreadStartup,
@@ -20,7 +22,7 @@ Thread::Thread(uint32_t stackSize,
    mStartAddress(startAddress),
    mStartParameter(startParameter),
    mCreationFlags(flags),
-   mID(++g_threadIdCounter),
+   mID(++gThreadIdCounter),
    mState(nullptr)
 {
    mThread = std::thread(&Thread::entry, this);
@@ -77,6 +79,8 @@ void Thread::entry()
 {
    auto process = KeGetCurrentProcess();
 
+   gCurrentThread = this;
+
    // Allocate stack
    mStack.resize(mStackSize);
 
@@ -95,7 +99,7 @@ void Thread::entry()
    gSystem.resumeThread(this);
 }
 
-uint32_t
+KSTATUS
 ExCreateThread(ptr32_t<be_uint32_t> pHandle,
                uint32_t dwStackSize,
                ptr32_t<be_uint32_t> lpThreadId,
@@ -120,5 +124,10 @@ ExCreateThread(ptr32_t<be_uint32_t> pHandle,
       *lpThreadId = thread->getId();
    }
 
-   return 0;
+   return KSTATUS_SUCCESS;
+}
+
+Thread *GetCurrentThread()
+{
+   return gCurrentThread;
 }

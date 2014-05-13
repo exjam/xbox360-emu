@@ -50,7 +50,7 @@ private:
    std::vector<uint8_t> mTLS;
 };
 
-uint32_t
+KSTATUS
 ExCreateThread(ptr32_t<be_uint32_t> pHandle,
                uint32_t dwStackSize,
                ptr32_t<be_uint32_t> lpThreadId,
@@ -58,5 +58,7 @@ ExCreateThread(ptr32_t<be_uint32_t> pHandle,
                ptr32_t<void> lpStartAddress,
                ptr32_t<void> lpParameter,
                uint32_t dwCreationFlagsMod);
+
+Thread *GetCurrentThread();
 
 #endif // ifndef XBOXKRNL_THREAD_H

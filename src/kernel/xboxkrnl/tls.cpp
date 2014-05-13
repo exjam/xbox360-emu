@@ -1,5 +1,6 @@
 #include "kernel/xboxkrnl/tls.h"
 
+//TODO: Un-windows-ify
 #include <Windows.h>
 
 KSpinLock KiTlsSlotBitmapLock;
@@ -10,7 +11,7 @@ KeTlsAlloc()
    return TlsAlloc();
 }
 
-uint64_t
+KBOOL
 KeTlsFree(uint32_t index)
 {
    return TlsFree(index);
@@ -22,7 +23,7 @@ KeTlsGetValue(uint32_t index)
    return TlsGetValue(index);
 }
 
-uint64_t
+KBOOL
 KeTlsSetValue(uint32_t index, ptr32_t<void> value)
 {
    return TlsSetValue(index, value);
